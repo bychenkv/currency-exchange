@@ -1,5 +1,6 @@
 package com.bychenkv;
 
+import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.model.Currency;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -11,39 +12,15 @@ import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet("/currencies")
 public class CurrencyServlet extends HttpServlet {
-    static {
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("SQLite JDBC driver not found", e);
-        }
-    }
+    private final CurrencyDao dao = new CurrencyDao();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        List<Currency> currencies = new ArrayList<>();
-
-        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:/Users/mac/currency.db")) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet resultSet = statement.executeQuery("SELECT * FROM currencies")) {
-                    while (resultSet.next()) {
-                        int id = resultSet.getInt("id");
-                        String code = resultSet.getString("code");
-                        String fullName = resultSet.getString("full_name");
-                        String sign = resultSet.getString("sign");
-                        currencies.add(new Currency(id, code, fullName, sign));
-                    }
-
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        List<Currency> currencies = dao.findAll();
 
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(currencies);
