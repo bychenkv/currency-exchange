@@ -1,4 +1,4 @@
-package com.bychenkv;
+package com.bychenkv.controller;
 
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.model.Currency;
@@ -9,25 +9,37 @@ import jakarta.servlet.http.HttpServletResponse;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.sql.*;
-import java.util.List;
+import java.sql.SQLException;
+import java.util.Optional;
 
-@WebServlet("/currencies")
+@WebServlet("/currency/*")
 public class CurrencyServlet extends HttpServlet {
     private final CurrencyDao dao = new CurrencyDao();
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            List<Currency> currencies = dao.findAll();
+        String pathInfo = req.getPathInfo();
 
+        if (pathInfo == null || pathInfo.contentEquals("/")) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Currency code is missing");
+            return;
+        }
+
+        String code = pathInfo.replace("/", "").toUpperCase();
+        try {
+            Optional<Currency> currency = dao.findByCode(code);
+            if (!currency.isPresent()) {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Currency " + code + " not found");
+                return;
+            }
+
+            resp.setStatus(HttpServletResponse.SC_OK);
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_OK);
 
-            mapper.writeValue(resp.getWriter(), currencies);
-        } catch (Exception e) {
+            mapper.writeValue(resp.getWriter(), currency.get());
+        } catch (SQLException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
