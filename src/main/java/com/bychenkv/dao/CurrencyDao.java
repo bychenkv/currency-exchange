@@ -54,6 +54,33 @@ public class CurrencyDao {
         return Optional.empty();
     }
 
+    public Currency save(Currency currency) throws SQLException {
+        String sql = "INSERT INTO currencies (code, full_name, sign) VALUES (?, ?, ?)";
+
+        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+        ) {
+            statement.setString(1, currency.getCode());
+            statement.setString(2, currency.getFullName());
+            statement.setString(3, currency.getSign());
+
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Creating currency failed, no rows affected");
+            }
+
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    currency.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Creating currency failed, no ID obtained");
+                }
+            }
+        }
+
+        return currency;
+    }
+
     private Currency getCurrencyFromResultSet(ResultSet resultSet) throws SQLException {
         return new Currency(
                 resultSet.getInt("id"),
