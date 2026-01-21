@@ -15,7 +15,7 @@ public class CurrencyDao {
         }
     }
 
-    public List<Currency> findAll() {
+    public List<Currency> findAll() throws SQLException {
         List<Currency> currencies = new ArrayList<>();
 
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite:/Users/mac/currency.db")) {
@@ -30,11 +30,8 @@ public class CurrencyDao {
                         Currency currency = new Currency(id, code, fullName, sign);
                         currencies.add(currency);
                     }
-
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
 
         return currencies;
