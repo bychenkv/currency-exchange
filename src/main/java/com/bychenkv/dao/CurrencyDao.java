@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public class CurrencyDao {
+    private final static String DB_CONNECTION_URL = "jdbc:sqlite:/Users/mac/currency.db";
+
     static {
         try {
             Class.forName("org.sqlite.JDBC");
@@ -19,7 +21,7 @@ public class CurrencyDao {
     public List<Currency> findAll() throws SQLException {
         List<Currency> currencies = new ArrayList<>();
 
-        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:/Users/mac/currency.db")) {
+        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL)) {
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet resultSet = statement.executeQuery("SELECT * FROM currencies")) {
                     while (resultSet.next()) {
@@ -41,7 +43,7 @@ public class CurrencyDao {
     public Optional<Currency> findByCode(String code) throws SQLException {
         Optional<Currency> currency = Optional.empty();
 
-        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:/Users/mac/currency.db")) {
+        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL)) {
             PreparedStatement statement = connection.prepareStatement("SELECT * FROM currencies WHERE code = ?");
             statement.setString(1, code);
 
