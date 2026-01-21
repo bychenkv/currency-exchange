@@ -20,20 +20,21 @@ public class CurrencyDao {
 
     public List<Currency> findAll() throws SQLException {
         List<Currency> currencies = new ArrayList<>();
+        String sql = "SELECT * FROM currencies";
 
-        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL)) {
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet resultSet = statement.executeQuery("SELECT * FROM currencies")) {
-                    while (resultSet.next()) {
-                        int id = resultSet.getInt("id");
-                        String code = resultSet.getString("code");
-                        String fullName = resultSet.getString("full_name");
-                        String sign = resultSet.getString("sign");
-
-                        Currency currency = new Currency(id, code, fullName, sign);
-                        currencies.add(currency);
-                    }
-                }
+        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)
+        ) {
+            while (resultSet.next()) {
+                currencies.add(
+                        new Currency(
+                                resultSet.getInt("id"),
+                                resultSet.getString("code"),
+                                resultSet.getString("full_name"),
+                                resultSet.getString("sign")
+                        )
+                );
             }
         }
 
@@ -41,25 +42,27 @@ public class CurrencyDao {
     }
 
     public Optional<Currency> findByCode(String code) throws SQLException {
-        Optional<Currency> currency = Optional.empty();
+        String sql = "SELECT * FROM currencies WHERE code = ?";
 
-        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL)) {
-            PreparedStatement statement = connection.prepareStatement("SELECT * FROM currencies WHERE code = ?");
+        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+             PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
             statement.setString(1, code);
 
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                String fullName = resultSet.getString("full_name");
-                String sign = resultSet.getString("sign");
-
-                currency = Optional.of(new Currency(id, code, fullName, sign));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Optional.of(
+                            new Currency(
+                                    resultSet.getInt("id"),
+                                    resultSet.getString("code"),
+                                    resultSet.getString("full_name"),
+                                    resultSet.getString("sign")
+                            )
+                    );
+                }
             }
-
-            resultSet.close();
-            statement.close();
         }
 
-        return currency;
+        return Optional.empty();
     }
 }
