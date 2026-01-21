@@ -2,6 +2,7 @@ package com.bychenkv.dao;
 
 import com.bychenkv.model.Currency;
 
+import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,19 +23,14 @@ public class CurrencyDao {
         List<Currency> currencies = new ArrayList<>();
         String sql = "SELECT * FROM currencies";
 
+        // FIXME: opening a connection every time is too expensive
+        //        need to inject opened connection in DAO
         try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)
         ) {
             while (resultSet.next()) {
-                currencies.add(
-                        new Currency(
-                                resultSet.getInt("id"),
-                                resultSet.getString("code"),
-                                resultSet.getString("full_name"),
-                                resultSet.getString("sign")
-                        )
-                );
+                currencies.add(getCurrencyFromResultSet(resultSet));
             }
         }
 
@@ -51,18 +47,20 @@ public class CurrencyDao {
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    return Optional.of(
-                            new Currency(
-                                    resultSet.getInt("id"),
-                                    resultSet.getString("code"),
-                                    resultSet.getString("full_name"),
-                                    resultSet.getString("sign")
-                            )
-                    );
+                    return Optional.of(getCurrencyFromResultSet(resultSet));
                 }
             }
         }
 
         return Optional.empty();
+    }
+
+    private Currency getCurrencyFromResultSet(ResultSet resultSet) throws SQLException {
+        return new Currency(
+                resultSet.getInt("id"),
+                resultSet.getString("code"),
+                resultSet.getString("full_name"),
+                resultSet.getString("sign")
+        );
     }
 }
