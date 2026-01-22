@@ -12,7 +12,8 @@ target/
 *.iws
 *.iml
 *.ipr
-.idea/httpRequests
+.idea/httpRequests/
+.idea/dataSources/
 
 ### Eclipse ###
 .apt_generated
