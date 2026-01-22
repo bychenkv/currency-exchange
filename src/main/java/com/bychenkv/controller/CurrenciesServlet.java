@@ -11,7 +11,6 @@ import org.sqlite.SQLiteException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 
 @WebServlet("/currencies")
@@ -37,25 +36,7 @@ public class CurrenciesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            String code = req.getParameter("code");
-            if (code == null) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing code field");
-                return;
-            }
-
-            String fullName = req.getParameter("name");
-            if (fullName == null) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing name field");
-                return;
-            }
-
-            String sign = req.getParameter("sign");
-            if (sign == null) {
-                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing sign field");
-                return;
-            }
-
-            Currency currency = dao.save(new Currency(code, fullName, sign));
+            Currency currency = dao.save(getCurrencyFromRequest(req));
 
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
@@ -63,12 +44,38 @@ public class CurrenciesServlet extends HttpServlet {
 
             mapper.writeValue(resp.getWriter(), currency);
 
+        } catch (MissingParameterException e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (SQLiteException e) {
             if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
                 resp.sendError(HttpServletResponse.SC_CONFLICT, "Currency already exists");
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    private Currency getCurrencyFromRequest(HttpServletRequest req) throws MissingParameterException {
+        return new Currency(
+                validateParameter(req, "code"),
+                validateParameter(req, "name"),
+                validateParameter(req, "sign")
+        );
+    }
+
+    private String validateParameter(HttpServletRequest req, String name) throws MissingParameterException {
+        String value = req.getParameter(name);
+
+        if (value == null || value.isBlank()) {
+            throw new MissingParameterException("Missing or empty field: " + name);
+        }
+
+        return value;
+    }
+
+    private static class MissingParameterException extends Exception {
+        public MissingParameterException(String message) {
+            super(message);
         }
     }
 }
