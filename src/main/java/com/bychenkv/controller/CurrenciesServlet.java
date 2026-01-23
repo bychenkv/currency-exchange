@@ -1,6 +1,7 @@
 package com.bychenkv.controller;
 
 import com.bychenkv.dao.CurrencyDao;
+import com.bychenkv.exception.MissingParameterException;
 import com.bychenkv.model.Currency;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -71,11 +72,5 @@ public class CurrenciesServlet extends HttpServlet {
         }
 
         return value;
-    }
-
-    private static class MissingParameterException extends Exception {
-        public MissingParameterException(String message) {
-            super(message);
-        }
     }
 }
