@@ -13,14 +13,6 @@ import tools.jackson.databind.ObjectMapper;
 public class AppContextListener implements ServletContextListener {
     private final static String DB_CONNECTION_URL = "jdbc:sqlite:/Users/mac/currency.db";
 
-    static {
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("SQLite JDBC driver not found", e);
-        }
-    }
-
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         SQLiteDataSource dataSource = new SQLiteDataSource();
