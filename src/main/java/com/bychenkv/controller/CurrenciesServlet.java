@@ -16,8 +16,14 @@ import java.util.List;
 
 @WebServlet("/currencies")
 public class CurrenciesServlet extends HttpServlet {
-    private final CurrencyDao dao = new CurrencyDao();
-    private final ObjectMapper mapper = new ObjectMapper();
+    private CurrencyDao dao;
+    private ObjectMapper mapper;
+
+    @Override
+    public void init() {
+        this.dao = (CurrencyDao) getServletContext().getAttribute("currencyDao");
+        this.mapper = (ObjectMapper) getServletContext().getAttribute("mapper");
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

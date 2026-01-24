@@ -14,8 +14,14 @@ import java.util.Optional;
 
 @WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends HttpServlet {
-    private final ExchangeRateDao dao = new ExchangeRateDao();
-    private final ObjectMapper mapper = new ObjectMapper();
+    private ExchangeRateDao dao;
+    private ObjectMapper mapper;
+
+    @Override
+    public void init() {
+        this.dao = (ExchangeRateDao) getServletContext().getAttribute("exchangeRateDao");
+        this.mapper = (ObjectMapper) getServletContext().getAttribute("mapper");
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

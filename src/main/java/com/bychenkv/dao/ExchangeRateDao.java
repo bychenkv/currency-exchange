@@ -1,22 +1,22 @@
 package com.bychenkv.dao;
 
+import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.model.Currency;
 import com.bychenkv.model.ExchangeRate;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class ExchangeRateDao {
-    private final static String DB_CONNECTION_URL = "jdbc:sqlite:/Users/mac/currency.db";
+    private final DataSource dataSource;
+    private final CurrencyDao currencyDao;
 
-    static {
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("SQLite JDBC driver not found", e);
-        }
+    public ExchangeRateDao(DataSource dataSource, CurrencyDao currencyDao) {
+        this.dataSource = dataSource;
+        this.currencyDao = currencyDao;
     }
 
     public List<ExchangeRate> findAll() throws SQLException {
@@ -36,7 +36,7 @@ public class ExchangeRateDao {
                 JOIN currencies base ON er.base_currency_id = base.id
                 JOIN currencies target ON er.target_currency_id = target.id""";
 
-        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+        try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)
         ) {
@@ -65,7 +65,7 @@ public class ExchangeRateDao {
                 JOIN currencies target ON er.target_currency_id = target.id
                 WHERE base_code = ? AND target_code = ?""";
 
-        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
             statement.setString(1, baseCode);
@@ -81,19 +81,25 @@ public class ExchangeRateDao {
         return Optional.empty();
     }
 
-    public ExchangeRate save(String baseCode, String targetCode, double rate) throws SQLException {
+    public ExchangeRate save(String baseCode,
+                             String targetCode,
+                             double rate) throws SQLException, CurrencyNotFoundException {
+
+        Currency baseCurrency = currencyDao.findByCode(baseCode)
+                .orElseThrow(() -> new CurrencyNotFoundException(baseCode));
+
+        Currency targetCurrency = currencyDao.findByCode(targetCode)
+                .orElseThrow(() -> new CurrencyNotFoundException(targetCode));
+
         String sql = """
                 INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate)
-                SELECT
-                    (SELECT id FROM currencies WHERE code = ?),
-                    (SELECT id FROM currencies WHERE code = ?),
-                    ?""";
+                VALUES (?, ?, ?)""";
 
-        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         ) {
-            statement.setString(1, baseCode);
-            statement.setString(2, targetCode);
+            statement.setInt(1, baseCurrency.getId());
+            statement.setInt(2, targetCurrency.getId());
             statement.setDouble(3, rate);
 
             int affectedRows = statement.executeUpdate();
@@ -130,7 +136,7 @@ public class ExchangeRateDao {
                 JOIN currencies target ON er.target_currency_id = target.id
                 WHERE er.id = ?""";
 
-        try (Connection connection = DriverManager.getConnection(DB_CONNECTION_URL);
+        try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
             statement.setInt(1, id);
