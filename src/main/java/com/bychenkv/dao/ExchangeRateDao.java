@@ -1,7 +1,9 @@
 package com.bychenkv.dao;
 
 import com.bychenkv.exception.CurrencyNotFoundException;
+import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.Currency;
+import com.bychenkv.model.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
 
 import javax.sql.DataSource;
@@ -48,7 +50,7 @@ public class ExchangeRateDao {
         return exchangeRates;
     }
 
-    public Optional<ExchangeRate> findByCodePair(String baseCode, String targetCode) throws SQLException {
+    public Optional<ExchangeRate> findByCodePair(CurrencyCodePair codePair) throws SQLException {
         String sql = """
                 SELECT er.id AS id,
                        base.id AS base_id,
@@ -68,8 +70,8 @@ public class ExchangeRateDao {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
-            statement.setString(1, baseCode);
-            statement.setString(2, targetCode);
+            statement.setString(1, codePair.base());
+            statement.setString(2, codePair.target());
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
@@ -81,15 +83,13 @@ public class ExchangeRateDao {
         return Optional.empty();
     }
 
-    public ExchangeRate save(String baseCode,
-                             String targetCode,
-                             double rate) throws SQLException, CurrencyNotFoundException {
+    public ExchangeRate save(CurrencyCodePair codePair, double rate) throws SQLException,
+                                                                            CurrencyNotFoundException {
+        Currency baseCurrency = currencyDao.findByCode(codePair.base())
+                .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
 
-        Currency baseCurrency = currencyDao.findByCode(baseCode)
-                .orElseThrow(() -> new CurrencyNotFoundException(baseCode));
-
-        Currency targetCurrency = currencyDao.findByCode(targetCode)
-                .orElseThrow(() -> new CurrencyNotFoundException(targetCode));
+        Currency targetCurrency = currencyDao.findByCode(codePair.target())
+                .orElseThrow(() -> new CurrencyNotFoundException(codePair.target()));
 
         String sql = """
                 INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate)
@@ -117,6 +117,37 @@ public class ExchangeRateDao {
         }
 
         throw new SQLException("Creating exchange rate failed");
+    }
+
+    public ExchangeRate update(CurrencyCodePair codePair, double rate) throws SQLException,
+                                                                              CurrencyNotFoundException,
+                                                                              ExchangeRateNotFoundException {
+        Currency baseCurrency = currencyDao.findByCode(codePair.base())
+                .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
+
+        Currency targetCurrency = currencyDao.findByCode(codePair.target())
+                .orElseThrow(() -> new CurrencyNotFoundException(codePair.target()));
+
+        String sql = """
+                UPDATE exchange_rates
+                SET rate = ?
+                WHERE base_currency_id = ? AND target_currency_id = ?""";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
+            statement.setDouble(1, rate);
+            statement.setInt(2, baseCurrency.getId());
+            statement.setInt(3, targetCurrency.getId());
+
+            int affectedRows = statement.executeUpdate();
+            if (affectedRows == 0) {
+                throw new ExchangeRateNotFoundException(codePair);
+            }
+
+            return findByCodePair(codePair).orElseThrow(() ->
+                    new SQLException("Error retrieving updated exchange rate"));
+        }
     }
 
     private Optional<ExchangeRate> findById(int id) throws SQLException {

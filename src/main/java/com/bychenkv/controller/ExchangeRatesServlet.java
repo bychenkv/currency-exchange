@@ -4,6 +4,7 @@ import com.bychenkv.dao.ExchangeRateDao;
 import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.exception.InvalidParameterException;
 import com.bychenkv.exception.MissingParameterException;
+import com.bychenkv.model.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -46,11 +47,10 @@ public class ExchangeRatesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            String baseCode = validateCurrencyCode(req, "baseCurrencyCode");
-            String targetCode = validateCurrencyCode(req, "targetCurrencyCode");
+            CurrencyCodePair codePair = extractCodePairFromRequest(req);
             double rate = validateExchangeRate(req);
 
-            ExchangeRate exchangeRate = dao.save(baseCode, targetCode, rate);
+            ExchangeRate exchangeRate = dao.save(codePair, rate);
 
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
@@ -69,6 +69,14 @@ public class ExchangeRatesServlet extends HttpServlet {
         } catch (SQLException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
+    }
+
+    private CurrencyCodePair extractCodePairFromRequest(HttpServletRequest req) throws InvalidParameterException,
+                                                                                       MissingParameterException {
+        return new CurrencyCodePair(
+                validateCurrencyCode(req, "baseCurrencyCode"),
+                validateCurrencyCode(req, "targetCurrencyCode")
+        );
     }
 
     private String validateCurrencyCode(HttpServletRequest req,
