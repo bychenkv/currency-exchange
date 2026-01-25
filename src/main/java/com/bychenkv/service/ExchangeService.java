@@ -35,8 +35,8 @@ public class ExchangeService {
         if (reverse.isPresent()) {
             ExchangeRate exchangeRate = reverse.get();
             return new ExchangeResult(
-                    exchangeRate.getBaseCurrency(),
                     exchangeRate.getTargetCurrency(),
+                    exchangeRate.getBaseCurrency(),
                     1 / exchangeRate.getRate(),
                     amount,
                     amount / exchangeRate.getRate()
