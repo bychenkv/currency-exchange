@@ -3,24 +3,21 @@ package com.bychenkv.controller;
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.model.Currency;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Optional;
 
 @WebServlet("/currency/*")
-public class CurrencyServlet extends HttpServlet {
+public class CurrencyServlet extends BaseServlet {
     private CurrencyDao dao;
-    private ObjectMapper mapper;
 
     @Override
     public void init() {
+        super.init();
         this.dao = (CurrencyDao) getServletContext().getAttribute("currencyDao");
-        this.mapper = (ObjectMapper) getServletContext().getAttribute("mapper");
     }
 
     @Override
@@ -35,15 +32,15 @@ public class CurrencyServlet extends HttpServlet {
         try {
             Optional<Currency> currency = dao.findByCode(code);
             if (currency.isEmpty()) {
-                resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Currency " + code + " not found");
+                // TODO: maybe use CurrencyNotFoundException
+                sendError(resp, HttpServletResponse.SC_NOT_FOUND, "Currency " + code + " not found");
                 return;
             }
 
-            resp.setStatus(HttpServletResponse.SC_OK);
-            mapper.writeValue(resp.getWriter(), currency.get());
+            sendJson(resp, HttpServletResponse.SC_OK, currency.get());
 
         } catch (SQLException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }

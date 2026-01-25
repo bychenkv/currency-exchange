@@ -5,39 +5,30 @@ import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.exception.InvalidParameterException;
 import com.bychenkv.exception.MissingParameterException;
 import com.bychenkv.dto.CurrencyCodePair;
-import com.bychenkv.model.ExchangeRate;
 import com.bychenkv.utils.CurrencyCodePairParser;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.sqlite.SQLiteErrorCode;
 import org.sqlite.SQLiteException;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 
 @WebServlet("/exchangeRates")
-public class ExchangeRatesServlet extends HttpServlet {
+public class ExchangeRatesServlet extends BaseServlet {
     private ExchangeRateDao dao;
-    private ObjectMapper mapper;
 
     @Override
     public void init() {
+        super.init();
         this.dao = (ExchangeRateDao) getServletContext().getAttribute("exchangeRateDao");
-        this.mapper = (ObjectMapper) getServletContext().getAttribute("mapper");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            List<ExchangeRate> exchangeRates = dao.findAll();
-
-            resp.setStatus(HttpServletResponse.SC_OK);
-            mapper.writeValue(resp.getWriter(), exchangeRates);
-
+            sendJson(resp, HttpServletResponse.SC_OK, dao.findAll());
         } catch (SQLException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
@@ -46,28 +37,23 @@ public class ExchangeRatesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            CurrencyCodePair codePair = CurrencyCodePairParser.parse(
-                    req,
+            CurrencyCodePair codePair = CurrencyCodePairParser.parse(req,
                     "baseCurrencyCode",
-                    "targetCurrencyCode"
-            );
+                    "targetCurrencyCode");
             double rate = validateExchangeRate(req);
 
-            ExchangeRate exchangeRate = dao.save(codePair, rate);
-
-            resp.setStatus(HttpServletResponse.SC_CREATED);
-            mapper.writeValue(resp.getWriter(), exchangeRate);
+            sendJson(resp, HttpServletResponse.SC_CREATED, dao.save(codePair, rate));
 
         } catch (InvalidParameterException | MissingParameterException e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (CurrencyNotFoundException e) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (SQLiteException e) {
             if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
-                resp.sendError(HttpServletResponse.SC_CONFLICT, "Exchange rate already exists");
+                sendError(resp, HttpServletResponse.SC_CONFLICT, "Exchange rate already exists");
             }
         } catch (SQLException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 

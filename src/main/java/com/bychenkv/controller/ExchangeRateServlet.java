@@ -1,14 +1,12 @@
 package com.bychenkv.controller;
 
 import com.bychenkv.dao.ExchangeRateDao;
-import com.bychenkv.exception.*;
 import com.bychenkv.dto.CurrencyCodePair;
+import com.bychenkv.exception.*;
 import com.bychenkv.model.ExchangeRate;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -18,35 +16,32 @@ import java.util.Arrays;
 import java.util.Optional;
 
 @WebServlet("/exchangeRate/*")
-public class ExchangeRateServlet extends HttpServlet {
+public class ExchangeRateServlet extends BaseServlet {
     private ExchangeRateDao dao;
-    private ObjectMapper mapper;
 
     @Override
     public void init() {
+        super.init();
         this.dao = (ExchangeRateDao) getServletContext().getAttribute("exchangeRateDao");
-        this.mapper = (ObjectMapper) getServletContext().getAttribute("mapper");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             CurrencyCodePair codePair = extractCodePairFromPath(req);
-
             Optional<ExchangeRate> exchangeRate = dao.findByCodePair(codePair);
             if (exchangeRate.isEmpty()) {
-                resp.sendError(HttpServletResponse.SC_NOT_FOUND,
+                sendError(resp,
+                        HttpServletResponse.SC_NOT_FOUND,
                         "Exchange rate for currency pair " + codePair + " not found");
                 return;
             }
-
-            resp.setStatus(HttpServletResponse.SC_OK);
-            mapper.writeValue(resp.getWriter(), exchangeRate.get());
+            sendJson(resp, HttpServletResponse.SC_OK, exchangeRate.get());
 
         } catch (InvalidCodePair e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (SQLException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -56,17 +51,14 @@ public class ExchangeRateServlet extends HttpServlet {
             CurrencyCodePair codePair = extractCodePairFromPath(req);
             double rate = validateExchangeRate(req);
 
-            ExchangeRate exchangeRate = dao.update(codePair, rate);
-
-            resp.setStatus(HttpServletResponse.SC_OK);
-            mapper.writeValue(resp.getWriter(), exchangeRate);
+            sendJson(resp, HttpServletResponse.SC_OK, dao.update(codePair, rate));
 
         } catch (InvalidCodePair | MissingParameterException | InvalidParameterException e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (CurrencyNotFoundException | ExchangeRateNotFoundException e) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (SQLException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
