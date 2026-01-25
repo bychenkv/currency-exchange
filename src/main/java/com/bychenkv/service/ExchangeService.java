@@ -19,51 +19,35 @@ public class ExchangeService {
     public ExchangeResult exchange(CurrencyCodePair codePair,
                                    double amount) throws SQLException,
                                                          ExchangeRateNotFoundException {
-        Optional<ExchangeRate> direct = dao.findByCodePair(codePair);
+        Optional<ExchangeResult> direct = dao.findByCodePair(codePair)
+                .map(er -> ExchangeResult.direct(er, amount));
         if (direct.isPresent()) {
-            ExchangeRate exchangeRate = direct.get();
-            return new ExchangeResult(
-                    exchangeRate.getBaseCurrency(),
-                    exchangeRate.getTargetCurrency(),
-                    exchangeRate.getRate(),
-                    amount,
-                    exchangeRate.getRate() * amount
-            );
+            return direct.get();
         }
 
-        Optional<ExchangeRate> reverse = dao.findByCodePair(codePair.reversed());
-        if (reverse.isPresent()) {
-            ExchangeRate exchangeRate = reverse.get();
-            return new ExchangeResult(
-                    exchangeRate.getTargetCurrency(),
-                    exchangeRate.getBaseCurrency(),
-                    1 / exchangeRate.getRate(),
-                    amount,
-                    amount / exchangeRate.getRate()
-            );
+        Optional<ExchangeResult> reversed = dao.findByCodePair(codePair.reversed())
+                .map(er -> ExchangeResult.reversed(er, amount));
+        if (reversed.isPresent()) {
+            return reversed.get();
         }
 
-        Optional<ExchangeRate> crossBase = dao.findByCodePair(
-                new CurrencyCodePair("USD", codePair.base())
-        );
-        if (crossBase.isPresent()) {
-            Optional<ExchangeRate> crossTarget = dao.findByCodePair(
-                    new CurrencyCodePair("USD", codePair.target())
+        return exchangeByCrossRate(codePair, amount)
+                .orElseThrow(() -> new ExchangeRateNotFoundException(codePair));
+    }
+
+    private Optional<ExchangeResult> exchangeByCrossRate(CurrencyCodePair codePair,
+                                                         double amount) throws SQLException {
+        CurrencyCodePair usdBase = new CurrencyCodePair("USD", codePair.base());
+        CurrencyCodePair usdTarget = new CurrencyCodePair("USD", codePair.target());
+
+        Optional<ExchangeRate> crossBase = dao.findByCodePair(usdBase);
+        Optional<ExchangeRate> crossTarget = dao.findByCodePair(usdTarget);
+
+        if (crossBase.isPresent() && crossTarget.isPresent()) {
+            return Optional.of(
+                    ExchangeResult.cross(crossBase.get(), crossTarget.get(), amount)
             );
-            if (crossTarget.isPresent()) {
-                ExchangeRate crossBaseExchangeRate = crossBase.get();
-                ExchangeRate crossTargetExchangeRate = crossTarget.get();
-
-                return new ExchangeResult(
-                        crossBaseExchangeRate.getTargetCurrency(),
-                        crossTargetExchangeRate.getTargetCurrency(),
-                        crossTargetExchangeRate.getRate() / crossBaseExchangeRate.getRate(),
-                        amount,
-                        amount * crossTargetExchangeRate.getRate() / crossBaseExchangeRate.getRate()
-                );
-            }
         }
-
-        throw new ExchangeRateNotFoundException(codePair);
+        return Optional.empty();
     }
 }
