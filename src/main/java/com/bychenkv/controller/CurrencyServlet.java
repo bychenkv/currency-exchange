@@ -35,7 +35,7 @@ public class CurrencyServlet extends HttpServlet {
         String code = pathInfo.replace("/", "").toUpperCase();
         try {
             Optional<Currency> currency = dao.findByCode(code);
-            if (!currency.isPresent()) {
+            if (currency.isEmpty()) {
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Currency " + code + " not found");
                 return;
             }

@@ -3,7 +3,7 @@ package com.bychenkv.dao;
 import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.Currency;
-import com.bychenkv.model.CurrencyCodePair;
+import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
 
 import javax.sql.DataSource;

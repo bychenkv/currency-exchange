@@ -4,8 +4,9 @@ import com.bychenkv.dao.ExchangeRateDao;
 import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.exception.InvalidParameterException;
 import com.bychenkv.exception.MissingParameterException;
-import com.bychenkv.model.CurrencyCodePair;
+import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
+import com.bychenkv.utils.CurrencyCodePairParser;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,7 +48,11 @@ public class ExchangeRatesServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            CurrencyCodePair codePair = extractCodePairFromRequest(req);
+            CurrencyCodePair codePair = CurrencyCodePairParser.parse(
+                    req,
+                    "baseCurrencyCode",
+                    "targetCurrencyCode"
+            );
             double rate = validateExchangeRate(req);
 
             ExchangeRate exchangeRate = dao.save(codePair, rate);
@@ -69,29 +74,6 @@ public class ExchangeRatesServlet extends HttpServlet {
         } catch (SQLException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
-    }
-
-    private CurrencyCodePair extractCodePairFromRequest(HttpServletRequest req) throws InvalidParameterException,
-                                                                                       MissingParameterException {
-        return new CurrencyCodePair(
-                validateCurrencyCode(req, "baseCurrencyCode"),
-                validateCurrencyCode(req, "targetCurrencyCode")
-        );
-    }
-
-    private String validateCurrencyCode(HttpServletRequest req,
-                                        String paramName) throws MissingParameterException,
-                                                                 InvalidParameterException {
-        String code = req.getParameter(paramName);
-        if (code == null || code.isBlank()) {
-            throw new MissingParameterException(paramName);
-        }
-
-        if (!code.matches("^[a-zA-Z]{3}$")) {
-            throw new InvalidParameterException("Invalid currency code: " + code +
-                                                ". It must comply with the ISO 4217 format.");
-        }
-        return code.toUpperCase();
     }
 
     private double validateExchangeRate(HttpServletRequest req) throws MissingParameterException,

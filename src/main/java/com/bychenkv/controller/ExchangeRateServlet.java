@@ -2,7 +2,7 @@ package com.bychenkv.controller;
 
 import com.bychenkv.dao.ExchangeRateDao;
 import com.bychenkv.exception.*;
-import com.bychenkv.model.CurrencyCodePair;
+import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;

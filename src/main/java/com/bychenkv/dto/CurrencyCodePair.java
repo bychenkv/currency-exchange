@@ -1,4 +1,4 @@
-package com.bychenkv.model;
+package com.bychenkv.dto;
 
 public record CurrencyCodePair(String base, String target) {
     public CurrencyCodePair(String codePair) {
@@ -8,5 +8,9 @@ public record CurrencyCodePair(String base, String target) {
     @Override
     public String toString() {
         return base + target;
+    }
+
+    public CurrencyCodePair reversed() {
+        return new CurrencyCodePair(target, base);
     }
 }

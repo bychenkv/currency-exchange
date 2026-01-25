@@ -2,6 +2,7 @@ package com.bychenkv;
 
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.dao.ExchangeRateDao;
+import com.bychenkv.service.ExchangeService;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -21,10 +22,12 @@ public class AppContextListener implements ServletContextListener {
         CurrencyDao currencyDao = new CurrencyDao(dataSource);
         ExchangeRateDao exchangeRateDao = new ExchangeRateDao(dataSource, currencyDao);
         ObjectMapper mapper = new ObjectMapper();
+        ExchangeService exchangeService = new ExchangeService(exchangeRateDao);
 
         ServletContext context = sce.getServletContext();
         context.setAttribute("currencyDao", currencyDao);
         context.setAttribute("exchangeRateDao", exchangeRateDao);
         context.setAttribute("mapper", mapper);
+        context.setAttribute("exchangeService", exchangeService);
     }
 }
