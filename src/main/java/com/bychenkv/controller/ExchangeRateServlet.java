@@ -32,8 +32,8 @@ public class ExchangeRateServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             CurrencyCodePair codePair = extractCodePairFromPath(req);
-            Optional<ExchangeRate> exchangeRate = dao.findByCodePair(codePair);
 
+            Optional<ExchangeRate> exchangeRate = dao.findByCodePair(codePair);
             if (exchangeRate.isEmpty()) {
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND,
                         "Exchange rate for currency pair " + codePair + " not found");
@@ -41,15 +41,12 @@ public class ExchangeRateServlet extends HttpServlet {
             }
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-
             mapper.writeValue(resp.getWriter(), exchangeRate.get());
 
-        } catch (SQLException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } catch (InvalidCodePair e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (SQLException e) {
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -62,9 +59,6 @@ public class ExchangeRateServlet extends HttpServlet {
             ExchangeRate exchangeRate = dao.update(codePair, rate);
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-
             mapper.writeValue(resp.getWriter(), exchangeRate);
 
         } catch (InvalidCodePair | MissingParameterException | InvalidParameterException e) {

@@ -36,9 +36,6 @@ public class ExchangeServlet extends HttpServlet {
             ExchangeResult result = exchangeService.exchange(codePair, amount);
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-
             mapper.writeValue(resp.getWriter(), result);
 
         } catch (InvalidParameterException | MissingParameterException e) {

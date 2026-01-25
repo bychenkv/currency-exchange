@@ -30,11 +30,9 @@ public class CurrenciesServlet extends HttpServlet {
         try {
             List<Currency> currencies = dao.findAll();
 
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_OK);
-
             mapper.writeValue(resp.getWriter(), currencies);
+
         } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
@@ -45,10 +43,7 @@ public class CurrenciesServlet extends HttpServlet {
         try {
             Currency currency = dao.save(getCurrencyFromRequest(req));
 
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_CREATED);
-
             mapper.writeValue(resp.getWriter(), currency);
 
         } catch (MissingParameterException e) {

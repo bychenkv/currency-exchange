@@ -26,13 +26,12 @@ public class CurrencyServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String pathInfo = req.getPathInfo();
-
         if (pathInfo == null || pathInfo.contentEquals("/")) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Currency code is missing");
             return;
         }
-
         String code = pathInfo.replace("/", "").toUpperCase();
+
         try {
             Optional<Currency> currency = dao.findByCode(code);
             if (currency.isEmpty()) {
@@ -41,10 +40,8 @@ public class CurrencyServlet extends HttpServlet {
             }
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-
             mapper.writeValue(resp.getWriter(), currency.get());
+
         } catch (SQLException e) {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
