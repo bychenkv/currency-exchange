@@ -1,7 +1,6 @@
 package com.bychenkv.controller;
 
 import com.bychenkv.dto.CurrencyCodePair;
-import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.exception.InvalidParameterException;
 import com.bychenkv.exception.MissingParameterException;
 import com.bychenkv.service.ExchangeService;
@@ -11,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 @WebServlet("/exchange")
 public class ExchangeServlet extends BaseServlet {
@@ -25,23 +23,13 @@ public class ExchangeServlet extends BaseServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            CurrencyCodePair codePair = CurrencyCodePairParser.parse(req, "from", "to");
-            double amount = validateAmount(req);
+        CurrencyCodePair codePair = CurrencyCodePairParser.parse(req, "from", "to");
+        double amount = validateAmount(req);
 
-            sendJson(resp, HttpServletResponse.SC_OK, exchangeService.exchange(codePair, amount));
-
-        } catch (InvalidParameterException | MissingParameterException e) {
-            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (ExchangeRateNotFoundException e) {
-            sendError(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-        } catch (SQLException e) {
-            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        sendJson(resp, HttpServletResponse.SC_OK, exchangeService.exchange(codePair, amount));
     }
 
-    private double validateAmount(HttpServletRequest req) throws MissingParameterException,
-                                                                 InvalidParameterException {
+    private double validateAmount(HttpServletRequest req) {
         String rawAmount = req.getParameter("amount");
         if (rawAmount == null || rawAmount.isBlank()) {
             throw new MissingParameterException("amount");

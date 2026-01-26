@@ -1,6 +1,10 @@
 package com.bychenkv.dao;
 
+import com.bychenkv.exception.CurrencyAlreadyExistsException;
+import com.bychenkv.exception.DatabaseException;
 import com.bychenkv.model.Currency;
+import org.sqlite.SQLiteErrorCode;
+import org.sqlite.SQLiteException;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -15,7 +19,7 @@ public class CurrencyDao {
         this.dataSource = dataSource;
     }
 
-    public List<Currency> findAll() throws SQLException {
+    public List<Currency> findAll() {
         List<Currency> currencies = new ArrayList<>();
         String sql = "SELECT * FROM currencies";
 
@@ -26,12 +30,14 @@ public class CurrencyDao {
             while (resultSet.next()) {
                 currencies.add(getCurrencyFromResultSet(resultSet));
             }
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find all currencies", e);
         }
 
         return currencies;
     }
 
-    public Optional<Currency> findByCode(String code) throws SQLException {
+    public Optional<Currency> findByCode(String code) {
         String sql = "SELECT * FROM currencies WHERE code = ?";
 
         try (Connection connection = dataSource.getConnection();
@@ -44,12 +50,14 @@ public class CurrencyDao {
                     return Optional.of(getCurrencyFromResultSet(resultSet));
                 }
             }
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find currency by code: " + code, e);
         }
 
         return Optional.empty();
     }
 
-    public Currency save(Currency currency) throws SQLException {
+    public Currency save(Currency currency) {
         String sql = "INSERT INTO currencies (code, full_name, sign) VALUES (?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
@@ -61,16 +69,23 @@ public class CurrencyDao {
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Creating currency failed, no rows affected");
+                throw new SQLException("No rows affected");
             }
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     currency.setId(generatedKeys.getInt(1));
                 } else {
-                    throw new SQLException("Creating currency failed, no ID obtained");
+                    throw new SQLException("No ID obtained");
                 }
             }
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException &&
+                ((SQLiteException) e).getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+                throw new CurrencyAlreadyExistsException("Currency with code " + currency.getCode() +
+                                                         " already exists", e);
+            }
+            throw new DatabaseException("Failed to save currency", e);
         }
 
         return currency;

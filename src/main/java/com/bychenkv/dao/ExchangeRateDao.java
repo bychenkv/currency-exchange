@@ -1,10 +1,11 @@
 package com.bychenkv.dao;
 
-import com.bychenkv.exception.CurrencyNotFoundException;
-import com.bychenkv.exception.ExchangeRateNotFoundException;
+import com.bychenkv.exception.*;
 import com.bychenkv.model.Currency;
 import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
+import org.sqlite.SQLiteErrorCode;
+import org.sqlite.SQLiteException;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -21,7 +22,7 @@ public class ExchangeRateDao {
         this.currencyDao = currencyDao;
     }
 
-    public List<ExchangeRate> findAll() throws SQLException {
+    public List<ExchangeRate> findAll() {
         List<ExchangeRate> exchangeRates = new ArrayList<>();
         String sql = """
                 SELECT er.id AS id,
@@ -45,12 +46,14 @@ public class ExchangeRateDao {
             while (resultSet.next()) {
                 exchangeRates.add(getExchangeRateFromResultSet(resultSet));
             }
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find all exchange rates", e);
         }
 
         return exchangeRates;
     }
 
-    public Optional<ExchangeRate> findByCodePair(CurrencyCodePair codePair) throws SQLException {
+    public Optional<ExchangeRate> findByCodePair(CurrencyCodePair codePair) {
         String sql = """
                 SELECT er.id AS id,
                        base.id AS base_id,
@@ -78,13 +81,14 @@ public class ExchangeRateDao {
                     return Optional.of(getExchangeRateFromResultSet(resultSet));
                 }
             }
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find exchange rate for pair: " + codePair, e);
         }
 
         return Optional.empty();
     }
 
-    public ExchangeRate save(CurrencyCodePair codePair, double rate) throws SQLException,
-                                                                            CurrencyNotFoundException {
+    public ExchangeRate save(CurrencyCodePair codePair, double rate) {
         Currency baseCurrency = currencyDao.findByCode(codePair.base())
                 .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
 
@@ -104,7 +108,7 @@ public class ExchangeRateDao {
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
-                throw new SQLException("Creating exchange rate failed, no rows affected");
+                throw new SQLException("No rows affected");
             }
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -114,14 +118,20 @@ public class ExchangeRateDao {
                             new SQLException("Error retrieving created exchange rate"));
                 }
             }
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException &&
+                ((SQLiteException) e).getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+                throw new ExchangeRateAlreadyExistsException("Exchange rate for pair " + codePair +
+                                                             " already exists" , e);
+            }
+
+            throw new DatabaseException("Failed to save exchange rate", e);
         }
 
-        throw new SQLException("Creating exchange rate failed");
+        throw new DatabaseException("Failed to save exchange rate");
     }
 
-    public ExchangeRate update(CurrencyCodePair codePair, double rate) throws SQLException,
-                                                                              CurrencyNotFoundException,
-                                                                              ExchangeRateNotFoundException {
+    public ExchangeRate update(CurrencyCodePair codePair, double rate) {
         Currency baseCurrency = currencyDao.findByCode(codePair.base())
                 .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
 
@@ -147,6 +157,8 @@ public class ExchangeRateDao {
 
             return findByCodePair(codePair).orElseThrow(() ->
                     new SQLException("Error retrieving updated exchange rate"));
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to update exchange rate", e);
         }
     }
 
@@ -183,21 +195,17 @@ public class ExchangeRateDao {
     }
 
     private ExchangeRate getExchangeRateFromResultSet(ResultSet resultSet) throws SQLException {
-        return new ExchangeRate(
-                resultSet.getInt("id"),
+        return new ExchangeRate(resultSet.getInt("id"),
                 getCurrencyFromResultSet(resultSet, "base"),
                 getCurrencyFromResultSet(resultSet, "target"),
-                resultSet.getDouble("rate")
-        );
+                resultSet.getDouble("rate"));
     }
 
     private Currency getCurrencyFromResultSet(ResultSet resultSet, String prefix) throws SQLException {
-        return new Currency(
-                resultSet.getInt(getFullColumnName(prefix, "id")),
+        return new Currency(resultSet.getInt(getFullColumnName(prefix, "id")),
                 resultSet.getString(getFullColumnName(prefix, "code")),
                 resultSet.getString(getFullColumnName(prefix, "name")),
-                resultSet.getString(getFullColumnName(prefix, "sign"))
-        );
+                resultSet.getString(getFullColumnName(prefix, "sign")));
     }
 
     private String getFullColumnName(String prefix, String name) {

@@ -1,19 +1,15 @@
 package com.bychenkv.controller;
 
 import com.bychenkv.dao.ExchangeRateDao;
-import com.bychenkv.exception.CurrencyNotFoundException;
+import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.exception.InvalidParameterException;
 import com.bychenkv.exception.MissingParameterException;
-import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.utils.CurrencyCodePairParser;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.sqlite.SQLiteErrorCode;
-import org.sqlite.SQLiteException;
 
 import java.io.IOException;
-import java.sql.SQLException;
 
 @WebServlet("/exchangeRates")
 public class ExchangeRatesServlet extends BaseServlet {
@@ -27,38 +23,20 @@ public class ExchangeRatesServlet extends BaseServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            sendJson(resp, HttpServletResponse.SC_OK, dao.findAll());
-        } catch (SQLException e) {
-            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        sendJson(resp, HttpServletResponse.SC_OK, dao.findAll());
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            CurrencyCodePair codePair = CurrencyCodePairParser.parse(req,
+        CurrencyCodePair codePair = CurrencyCodePairParser.parse(req,
                     "baseCurrencyCode",
                     "targetCurrencyCode");
-            double rate = validateExchangeRate(req);
+        double rate = validateExchangeRate(req);
 
-            sendJson(resp, HttpServletResponse.SC_CREATED, dao.save(codePair, rate));
-
-        } catch (InvalidParameterException | MissingParameterException e) {
-            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (CurrencyNotFoundException e) {
-            sendError(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-        } catch (SQLiteException e) {
-            if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
-                sendError(resp, HttpServletResponse.SC_CONFLICT, "Exchange rate already exists");
-            }
-        } catch (SQLException e) {
-            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        sendJson(resp, HttpServletResponse.SC_CREATED, dao.save(codePair, rate));
     }
 
-    private double validateExchangeRate(HttpServletRequest req) throws MissingParameterException,
-                                                                       InvalidParameterException {
+    private double validateExchangeRate(HttpServletRequest req) {
         String rawRate = req.getParameter("rate");
         if (rawRate == null || rawRate.isBlank()) {
             throw new MissingParameterException("rate");

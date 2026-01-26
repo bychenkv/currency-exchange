@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -27,60 +26,42 @@ public class ExchangeRateServlet extends BaseServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            CurrencyCodePair codePair = extractCodePairFromPath(req);
-            Optional<ExchangeRate> exchangeRate = dao.findByCodePair(codePair);
-            if (exchangeRate.isEmpty()) {
-                sendError(resp,
-                        HttpServletResponse.SC_NOT_FOUND,
-                        "Exchange rate for currency pair " + codePair + " not found");
-                return;
-            }
-            sendJson(resp, HttpServletResponse.SC_OK, exchangeRate.get());
-
-        } catch (InvalidCodePair e) {
-            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (SQLException e) {
-            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        CurrencyCodePair codePair = extractCodePairFromPath(req);
+        Optional<ExchangeRate> exchangeRate = dao.findByCodePair(codePair);
+        if (exchangeRate.isEmpty()) {
+            sendError(resp,
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Exchange rate for currency pair " + codePair + " not found");
+            return;
         }
+        sendJson(resp, HttpServletResponse.SC_OK, exchangeRate.get());
     }
 
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            CurrencyCodePair codePair = extractCodePairFromPath(req);
-            double rate = validateExchangeRate(req);
+        CurrencyCodePair codePair = extractCodePairFromPath(req);
+        double rate = validateExchangeRate(req);
 
-            sendJson(resp, HttpServletResponse.SC_OK, dao.update(codePair, rate));
-
-        } catch (InvalidCodePair | MissingParameterException | InvalidParameterException e) {
-            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (CurrencyNotFoundException | ExchangeRateNotFoundException e) {
-            sendError(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-        } catch (SQLException e) {
-            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        sendJson(resp, HttpServletResponse.SC_OK, dao.update(codePair, rate));
     }
 
-    private CurrencyCodePair extractCodePairFromPath(HttpServletRequest req) throws InvalidCodePair {
+    private CurrencyCodePair extractCodePairFromPath(HttpServletRequest req) {
         String pathInfo = req.getPathInfo();
 
         if (pathInfo == null || pathInfo.contentEquals("/")) {
-            throw new InvalidCodePair("Currency pair codes are missing");
+            throw new MissingParameterException("Currency pair codes are missing");
         }
 
         String codePair = pathInfo.replace("/", "").toUpperCase();
 
         if (!codePair.matches("^[A-Z]{6}$")) {
-            throw new InvalidCodePair("Incorrect code pair format");
+            throw new InvalidParameterException("Incorrect code pair format");
         }
 
         return new CurrencyCodePair(codePair);
     }
 
-    private double validateExchangeRate(HttpServletRequest req) throws MissingParameterException,
-                                                                       InvalidParameterException,
-                                                                       IOException {
+    private double validateExchangeRate(HttpServletRequest req) throws IOException {
         String rawRate = getRateParameter(req);
         try {
             double rate = Double.parseDouble(rawRate);
@@ -93,7 +74,7 @@ public class ExchangeRateServlet extends BaseServlet {
         }
     }
 
-    private String getRateParameter(HttpServletRequest req) throws IOException, MissingParameterException {
+    private String getRateParameter(HttpServletRequest req) throws IOException {
         return req.getReader().lines()
                 .map(parts -> URLDecoder.decode(parts, StandardCharsets.UTF_8))
                 .flatMap(l -> Arrays.stream(l.split("&")))

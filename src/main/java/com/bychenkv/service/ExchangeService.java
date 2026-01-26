@@ -6,7 +6,6 @@ import com.bychenkv.dto.ExchangeResult;
 import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.ExchangeRate;
 
-import java.sql.SQLException;
 import java.util.Optional;
 
 public class ExchangeService {
@@ -16,9 +15,7 @@ public class ExchangeService {
         this.dao = dao;
     }
 
-    public ExchangeResult exchange(CurrencyCodePair codePair,
-                                   double amount) throws SQLException,
-                                                         ExchangeRateNotFoundException {
+    public ExchangeResult exchange(CurrencyCodePair codePair, double amount) {
         Optional<ExchangeResult> direct = dao.findByCodePair(codePair)
                 .map(er -> ExchangeResult.direct(er, amount));
         if (direct.isPresent()) {
@@ -27,16 +24,13 @@ public class ExchangeService {
 
         Optional<ExchangeResult> reversed = dao.findByCodePair(codePair.reversed())
                 .map(er -> ExchangeResult.reversed(er, amount));
-        if (reversed.isPresent()) {
-            return reversed.get();
-        }
 
-        return exchangeByCrossRate(codePair, amount)
-                .orElseThrow(() -> new ExchangeRateNotFoundException(codePair));
+        return reversed.orElseGet(() -> exchangeByCrossRate(codePair, amount)
+                .orElseThrow(() -> new ExchangeRateNotFoundException(codePair)));
+
     }
 
-    private Optional<ExchangeResult> exchangeByCrossRate(CurrencyCodePair codePair,
-                                                         double amount) throws SQLException {
+    private Optional<ExchangeResult> exchangeByCrossRate(CurrencyCodePair codePair, double amount) {
         CurrencyCodePair usdBase = new CurrencyCodePair("USD", codePair.base());
         CurrencyCodePair usdTarget = new CurrencyCodePair("USD", codePair.target());
 
