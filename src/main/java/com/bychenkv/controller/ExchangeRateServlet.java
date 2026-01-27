@@ -10,9 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Optional;
 
 @WebServlet("/exchangeRate/*")
@@ -41,48 +38,25 @@ public class ExchangeRateServlet extends BaseServlet {
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         CurrencyCodePair codePair = extractCodePairFromPath(req);
-        double rate = validateExchangeRate(req);
+        double rate = getRateParameter(req);
 
-        sendJson(resp, HttpServletResponse.SC_OK, dao.update(codePair, rate));
+        ExchangeRate exchangeRate = dao.update(codePair, rate);
+        sendJson(resp, HttpServletResponse.SC_OK, exchangeRate);
     }
 
     private CurrencyCodePair extractCodePairFromPath(HttpServletRequest req) {
         String pathInfo = req.getPathInfo();
 
         if (pathInfo == null || pathInfo.contentEquals("/")) {
-            throw new MissingParameterException("Currency pair codes are missing");
+            throw new IllegalArgumentException("Currency pair codes are missing");
         }
 
         String codePair = pathInfo.replace("/", "").toUpperCase();
 
         if (!codePair.matches("^[A-Z]{6}$")) {
-            throw new InvalidParameterException("Incorrect code pair format");
+            throw new IllegalArgumentException("Incorrect code pair format");
         }
 
         return new CurrencyCodePair(codePair);
-    }
-
-    private double validateExchangeRate(HttpServletRequest req) throws IOException {
-        String rawRate = getRateParameter(req);
-        try {
-            double rate = Double.parseDouble(rawRate);
-            if (rate <= 0) {
-                throw new InvalidParameterException("Exchange rate must be positive");
-            }
-            return rate;
-        } catch (NumberFormatException e) {
-            throw new InvalidParameterException("Exchange rate must be numeric");
-        }
-    }
-
-    private String getRateParameter(HttpServletRequest req) throws IOException {
-        return req.getReader().lines()
-                .map(parts -> URLDecoder.decode(parts, StandardCharsets.UTF_8))
-                .flatMap(l -> Arrays.stream(l.split("&")))
-                .map(kv -> kv.split("=", 2))
-                .filter(parts -> parts.length == 2 && parts[0].contentEquals("rate"))
-                .map(parts -> parts[1])
-                .findFirst()
-                .orElseThrow(() -> new MissingParameterException("rate"));
     }
 }

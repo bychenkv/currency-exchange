@@ -36,8 +36,7 @@ public class ExceptionHandleFilter implements Filter {
             case CurrencyNotFoundException _,
                  ExchangeRateNotFoundException _ -> HttpServletResponse.SC_NOT_FOUND;
 
-            case InvalidParameterException _,
-                 MissingParameterException _ -> HttpServletResponse.SC_BAD_REQUEST;
+            case IllegalArgumentException _ -> HttpServletResponse.SC_BAD_REQUEST;
 
             default -> {
                 req.getServletContext().log("Error occurred: ", e);
