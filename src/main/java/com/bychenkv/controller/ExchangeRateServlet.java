@@ -4,6 +4,7 @@ import com.bychenkv.dao.ExchangeRateDao;
 import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.exception.*;
 import com.bychenkv.model.ExchangeRate;
+import com.bychenkv.utils.ResponseUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,7 +30,7 @@ public class ExchangeRateServlet extends BaseServlet {
         CurrencyCodePair codePair = extractCodePairFromPath(req);
         Optional<ExchangeRate> exchangeRate = dao.findByCodePair(codePair);
         if (exchangeRate.isEmpty()) {
-            sendError(resp,
+            ResponseUtils.sendError(resp,
                     HttpServletResponse.SC_NOT_FOUND,
                     "Exchange rate for currency pair " + codePair + " not found");
             return;
