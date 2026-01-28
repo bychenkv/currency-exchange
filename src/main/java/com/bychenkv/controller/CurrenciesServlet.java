@@ -30,6 +30,7 @@ public class CurrenciesServlet extends BaseServlet {
         String code = getRequiredParameter(req, "code");
         String name = getRequiredParameter(req, "name");
         String sign = getRequiredParameter(req, "sign");
+
         Currency currency = dao.save(new Currency(code, name, sign));
         sendJson(resp, HttpServletResponse.SC_CREATED, currency);
     }

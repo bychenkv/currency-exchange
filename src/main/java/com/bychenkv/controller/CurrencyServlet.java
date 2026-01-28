@@ -22,20 +22,18 @@ public class CurrencyServlet extends BaseServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String pathInfo = req.getPathInfo();
-        if (pathInfo == null || pathInfo.contentEquals("/")) {
+        String code = getPathParameter(req, "code").toUpperCase();
+        if (!code.matches(VALID_CURRENCY_CODE_REGEX)) {
             ResponseUtils.sendError(resp,
                     HttpServletResponse.SC_BAD_REQUEST,
-                    "Currency code is missing");
-            return;
+                    "Invalid currency code: " + code);
         }
-        String code = pathInfo.replace("/", "").toUpperCase();
 
         Optional<Currency> currency = dao.findByCode(code);
         if (currency.isEmpty()) {
             ResponseUtils.sendError(resp,
                     HttpServletResponse.SC_NOT_FOUND,
-                    "Currency " + code + " not found");
+                    "Currency not found: " + code);
             return;
         }
         sendJson(resp, HttpServletResponse.SC_OK, currency.get());

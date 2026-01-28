@@ -25,7 +25,7 @@ public class ExchangeServlet extends BaseServlet {
         String to = getCurrencyCodeParameter(req, "to");
         double amount = getAmountParameter(req);
 
-        ExchangeResult result = exchangeService.exchange(new CurrencyCodePair(from ,to), amount);
+        ExchangeResult result = exchangeService.exchange(new CurrencyCodePair(from, to), amount);
         sendJson(resp, HttpServletResponse.SC_OK, result);
     }
 }
