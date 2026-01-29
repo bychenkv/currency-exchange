@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 @WebServlet("/exchange")
 public class ExchangeServlet extends BaseServlet {
@@ -23,7 +24,7 @@ public class ExchangeServlet extends BaseServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String from = getCurrencyCodeParameter(req, "from");
         String to = getCurrencyCodeParameter(req, "to");
-        double amount = getAmountParameter(req);
+        BigDecimal amount = getAmountParameter(req);
 
         ExchangeResult result = exchangeService.exchange(new CurrencyCodePair(from, to), amount);
         sendJson(resp, HttpServletResponse.SC_OK, result);

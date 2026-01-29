@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @WebServlet("/exchangeRate/*")
@@ -40,7 +41,7 @@ public class ExchangeRateServlet extends BaseServlet {
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         CurrencyCodePair codePair = extractCodePair(req);
-        double rate = getRateParameter(req);
+        BigDecimal rate = getRateParameter(req);
 
         ExchangeRate exchangeRate = dao.update(codePair, rate);
         sendJson(resp, HttpServletResponse.SC_OK, exchangeRate);

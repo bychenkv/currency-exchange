@@ -7,6 +7,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -53,28 +54,28 @@ public class BaseServlet extends HttpServlet {
         return code;
     }
 
-    protected static double getRateParameter(HttpServletRequest req) throws IOException {
-        return getRequiredDoubleParameter(req,
+    protected static BigDecimal getRateParameter(HttpServletRequest req) throws IOException {
+        return getRequiredDecimalParameter(req,
                 "rate",
-                value -> value > 0,
+                value -> value.compareTo(BigDecimal.ZERO) > 0,
                 name -> "The '" + name + "' value must be positive");
     }
 
-    protected static double getAmountParameter(HttpServletRequest req) throws IOException {
-        return getRequiredDoubleParameter(req,
+    protected static BigDecimal getAmountParameter(HttpServletRequest req) throws IOException {
+        return getRequiredDecimalParameter(req,
                 "amount",
-                value -> value >= 0,
+                value -> value.compareTo(BigDecimal.ZERO) >= 0,
                 name -> "The '" + name + "' value must be non-negative");
     }
 
 
-    private static double getRequiredDoubleParameter(HttpServletRequest req,
-                                                     String name,
-                                                     Predicate<Double> validator,
-                                                     Function<String, String> errorMessageProvider) throws IOException {
+    private static BigDecimal getRequiredDecimalParameter(HttpServletRequest req,
+                                                          String name,
+                                                          Predicate<BigDecimal> validator,
+                                                          Function<String, String> errorMessageProvider) throws IOException {
         String rawValue = getRequiredParameter(req, name);
         try {
-            double value = Double.parseDouble(rawValue);
+            BigDecimal value = new BigDecimal(rawValue);
             if (!validator.test(value)) {
                 throw new IllegalArgumentException(errorMessageProvider.apply(name));
             }

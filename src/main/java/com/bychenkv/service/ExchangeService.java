@@ -6,16 +6,19 @@ import com.bychenkv.dto.ExchangeResult;
 import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.ExchangeRate;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 public class ExchangeService {
+    private static final String USD = "USD";
+
     private final ExchangeRateDao dao;
 
     public ExchangeService(ExchangeRateDao dao) {
         this.dao = dao;
     }
 
-    public ExchangeResult exchange(CurrencyCodePair codePair, double amount) {
+    public ExchangeResult exchange(CurrencyCodePair codePair, BigDecimal amount) {
         Optional<ExchangeResult> direct = dao.findByCodePair(codePair)
                 .map(er -> ExchangeResult.direct(er, amount));
         if (direct.isPresent()) {
@@ -30,9 +33,9 @@ public class ExchangeService {
 
     }
 
-    private Optional<ExchangeResult> exchangeByCrossRate(CurrencyCodePair codePair, double amount) {
-        CurrencyCodePair usdBase = new CurrencyCodePair("USD", codePair.base());
-        CurrencyCodePair usdTarget = new CurrencyCodePair("USD", codePair.target());
+    private Optional<ExchangeResult> exchangeByCrossRate(CurrencyCodePair codePair, BigDecimal amount) {
+        CurrencyCodePair usdBase = new CurrencyCodePair(USD, codePair.base());
+        CurrencyCodePair usdTarget = new CurrencyCodePair(USD, codePair.target());
 
         Optional<ExchangeRate> crossBase = dao.findByCodePair(usdBase);
         Optional<ExchangeRate> crossTarget = dao.findByCodePair(usdTarget);

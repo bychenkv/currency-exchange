@@ -8,6 +8,7 @@ import org.sqlite.SQLiteErrorCode;
 import org.sqlite.SQLiteException;
 
 import javax.sql.DataSource;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +89,7 @@ public class ExchangeRateDao {
         return Optional.empty();
     }
 
-    public ExchangeRate save(CurrencyCodePair codePair, double rate) {
+    public ExchangeRate save(CurrencyCodePair codePair, BigDecimal rate) {
         Currency baseCurrency = currencyDao.findByCode(codePair.base())
                 .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
 
@@ -104,7 +105,7 @@ public class ExchangeRateDao {
         ) {
             statement.setInt(1, baseCurrency.getId());
             statement.setInt(2, targetCurrency.getId());
-            statement.setDouble(3, rate);
+            statement.setBigDecimal(3, rate);
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -131,7 +132,7 @@ public class ExchangeRateDao {
         throw new DatabaseException("Failed to save exchange rate");
     }
 
-    public ExchangeRate update(CurrencyCodePair codePair, double rate) {
+    public ExchangeRate update(CurrencyCodePair codePair, BigDecimal rate) {
         Currency baseCurrency = currencyDao.findByCode(codePair.base())
                 .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
 
@@ -146,7 +147,7 @@ public class ExchangeRateDao {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
-            statement.setDouble(1, rate);
+            statement.setBigDecimal(1, rate);
             statement.setInt(2, baseCurrency.getId());
             statement.setInt(3, targetCurrency.getId());
 
@@ -198,7 +199,7 @@ public class ExchangeRateDao {
         return new ExchangeRate(resultSet.getInt("id"),
                 getCurrencyFromResultSet(resultSet, "base"),
                 getCurrencyFromResultSet(resultSet, "target"),
-                resultSet.getDouble("rate"));
+                resultSet.getBigDecimal("rate"));
     }
 
     private Currency getCurrencyFromResultSet(ResultSet resultSet, String prefix) throws SQLException {
