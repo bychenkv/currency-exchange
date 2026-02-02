@@ -29,20 +29,19 @@ public class ExceptionHandleFilter implements Filter {
     private void handleException(HttpServletResponse resp,
                                  HttpServletRequest req,
                                  Exception e) throws IOException {
-        int code = switch (e) {
-            case CurrencyAlreadyExistsException _,
-                 ExchangeRateAlreadyExistsException _ -> HttpServletResponse.SC_CONFLICT;
-
-            case CurrencyNotFoundException _,
-                 ExchangeRateNotFoundException _ -> HttpServletResponse.SC_NOT_FOUND;
-
-            case IllegalArgumentException _ -> HttpServletResponse.SC_BAD_REQUEST;
-
-            default -> {
-                req.getServletContext().log("Error occurred: ", e);
-                yield HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-            }
-        };
+        int code;
+        if (e instanceof CurrencyAlreadyExistsException ||
+            e instanceof ExchangeRateAlreadyExistsException) {
+            code = HttpServletResponse.SC_CONFLICT;
+        } else if (e instanceof CurrencyNotFoundException ||
+                   e instanceof ExchangeRateNotFoundException) {
+            code = HttpServletResponse.SC_NOT_FOUND;
+        } else if (e instanceof IllegalArgumentException) {
+            code = HttpServletResponse.SC_BAD_REQUEST;
+        } else {
+            req.getServletContext().log("Error occurred: ", e);
+            code = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+        }
 
         ResponseUtils.sendError(resp, code, e.getMessage());
     }
