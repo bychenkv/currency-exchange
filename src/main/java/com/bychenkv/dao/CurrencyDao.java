@@ -1,5 +1,6 @@
 package com.bychenkv.dao;
 
+import com.bychenkv.dto.CurrencyRequestDto;
 import com.bychenkv.exception.CurrencyAlreadyExistsException;
 import com.bychenkv.exception.DatabaseException;
 import com.bychenkv.model.Currency;
@@ -57,15 +58,15 @@ public class CurrencyDao {
         return Optional.empty();
     }
 
-    public Currency save(Currency currency) {
+    public int save(CurrencyRequestDto currency) {
         String sql = "INSERT INTO currencies (code, full_name, sign) VALUES (?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         ) {
-            statement.setString(1, currency.getCode());
-            statement.setString(2, currency.getFullName());
-            statement.setString(3, currency.getSign());
+            statement.setString(1, currency.code());
+            statement.setString(2, currency.name());
+            statement.setString(3, currency.sign());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -74,21 +75,23 @@ public class CurrencyDao {
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    currency.setId(generatedKeys.getInt(1));
-                } else {
-                    throw new SQLException("No ID obtained");
+                    int id = generatedKeys.getInt(1);
+                    if (id == 0) {
+                        throw new SQLException("No ID obtained");
+                    }
+                    return id;
                 }
             }
-        } catch (SQLException e) {
-            if (e instanceof SQLiteException &&
-                ((SQLiteException) e).getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
-                throw new CurrencyAlreadyExistsException("Currency with code " + currency.getCode() +
+        } catch (SQLiteException e) {
+            if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+                throw new CurrencyAlreadyExistsException("Currency with code " + currency.code() +
                                                          " already exists", e);
             }
+        } catch (SQLException e) {
             throw new DatabaseException("Failed to save currency", e);
         }
 
-        return currency;
+        throw new DatabaseException("Failed to save currency");
     }
 
     private Currency getCurrencyFromResultSet(ResultSet resultSet) throws SQLException {

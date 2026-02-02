@@ -2,6 +2,8 @@ package com.bychenkv;
 
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.dao.ExchangeRateDao;
+import com.bychenkv.service.CurrencyService;
+import com.bychenkv.service.ExchangeRateService;
 import com.bychenkv.service.ExchangeService;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
@@ -20,14 +22,18 @@ public class AppContextListener implements ServletContextListener {
         dataSource.setUrl(DB_CONNECTION_URL);
 
         CurrencyDao currencyDao = new CurrencyDao(dataSource);
-        ExchangeRateDao exchangeRateDao = new ExchangeRateDao(dataSource, currencyDao);
-        ObjectMapper mapper = new ObjectMapper();
+        ExchangeRateDao exchangeRateDao = new ExchangeRateDao(dataSource);
+
         ExchangeService exchangeService = new ExchangeService(exchangeRateDao);
+        CurrencyService currencyService = new CurrencyService(currencyDao);
+        ExchangeRateService exchangeRateService = new ExchangeRateService(exchangeRateDao, currencyDao);
+
+        ObjectMapper mapper = new ObjectMapper();
 
         ServletContext context = sce.getServletContext();
-        context.setAttribute("currencyDao", currencyDao);
-        context.setAttribute("exchangeRateDao", exchangeRateDao);
-        context.setAttribute("mapper", mapper);
+        context.setAttribute("currencyService", currencyService);
+        context.setAttribute("exchangeRateService", exchangeRateService);
         context.setAttribute("exchangeService", exchangeService);
+        context.setAttribute("mapper", mapper);
     }
 }

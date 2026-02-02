@@ -2,7 +2,7 @@ package com.bychenkv.service;
 
 import com.bychenkv.dao.ExchangeRateDao;
 import com.bychenkv.dto.CurrencyCodePair;
-import com.bychenkv.dto.ExchangeResult;
+import com.bychenkv.dto.ExchangeResponseDto;
 import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.ExchangeRate;
 
@@ -18,22 +18,22 @@ public class ExchangeService {
         this.dao = dao;
     }
 
-    public ExchangeResult exchange(CurrencyCodePair codePair, BigDecimal amount) {
-        Optional<ExchangeResult> direct = dao.findByCodePair(codePair)
-                .map(er -> ExchangeResult.direct(er, amount));
+    public ExchangeResponseDto exchange(CurrencyCodePair codePair, BigDecimal amount) {
+        Optional<ExchangeResponseDto> direct = dao.findByCodePair(codePair)
+                .map(er -> ExchangeResponseDto.direct(er, amount));
         if (direct.isPresent()) {
             return direct.get();
         }
 
-        Optional<ExchangeResult> reversed = dao.findByCodePair(codePair.reversed())
-                .map(er -> ExchangeResult.reversed(er, amount));
+        Optional<ExchangeResponseDto> reversed = dao.findByCodePair(codePair.reversed())
+                .map(er -> ExchangeResponseDto.reversed(er, amount));
 
         return reversed.orElseGet(() -> exchangeByCrossRate(codePair, amount)
                 .orElseThrow(() -> new ExchangeRateNotFoundException(codePair)));
 
     }
 
-    private Optional<ExchangeResult> exchangeByCrossRate(CurrencyCodePair codePair, BigDecimal amount) {
+    private Optional<ExchangeResponseDto> exchangeByCrossRate(CurrencyCodePair codePair, BigDecimal amount) {
         CurrencyCodePair usdBase = new CurrencyCodePair(USD, codePair.base());
         CurrencyCodePair usdTarget = new CurrencyCodePair(USD, codePair.target());
 
@@ -42,7 +42,7 @@ public class ExchangeService {
 
         if (crossBase.isPresent() && crossTarget.isPresent()) {
             return Optional.of(
-                    ExchangeResult.cross(crossBase.get(), crossTarget.get(), amount)
+                    ExchangeResponseDto.cross(crossBase.get(), crossTarget.get(), amount)
             );
         }
         return Optional.empty();

@@ -6,7 +6,7 @@ import com.bychenkv.model.ExchangeRate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-public record ExchangeResult(
+public record ExchangeResponseDto(
         Currency baseCurrency,
         Currency targetCurrency,
         BigDecimal rate,
@@ -15,8 +15,8 @@ public record ExchangeResult(
 ) {
     private static final int DEFAULT_RATE_SCALE = 6;
 
-    public static ExchangeResult direct(ExchangeRate exchangeRate, BigDecimal amount) {
-        return new ExchangeResult(
+    public static ExchangeResponseDto direct(ExchangeRate exchangeRate, BigDecimal amount) {
+        return new ExchangeResponseDto(
                 exchangeRate.getBaseCurrency(),
                 exchangeRate.getTargetCurrency(),
                 exchangeRate.getRate(),
@@ -25,12 +25,12 @@ public record ExchangeResult(
         );
     }
 
-    public static ExchangeResult reversed(ExchangeRate exchangeRate, BigDecimal amount) {
+    public static ExchangeResponseDto reversed(ExchangeRate exchangeRate, BigDecimal amount) {
         BigDecimal reversedRate = BigDecimal.ONE.divide(exchangeRate.getRate(),
                 DEFAULT_RATE_SCALE,
                 RoundingMode.HALF_UP);
 
-        return new ExchangeResult(
+        return new ExchangeResponseDto(
                 exchangeRate.getTargetCurrency(),
                 exchangeRate.getBaseCurrency(),
                 reversedRate,
@@ -39,14 +39,14 @@ public record ExchangeResult(
         );
     }
 
-    public static ExchangeResult cross(ExchangeRate crossBase,
-                                       ExchangeRate crossTarget,
-                                       BigDecimal amount) {
+    public static ExchangeResponseDto cross(ExchangeRate crossBase,
+                                            ExchangeRate crossTarget,
+                                            BigDecimal amount) {
         BigDecimal crossRate = crossTarget.getRate().divide(crossBase.getRate(),
                 DEFAULT_RATE_SCALE,
                 RoundingMode.HALF_UP);
 
-        return new ExchangeResult(
+        return new ExchangeResponseDto(
                 crossBase.getTargetCurrency(),
                 crossTarget.getTargetCurrency(),
                 crossRate,

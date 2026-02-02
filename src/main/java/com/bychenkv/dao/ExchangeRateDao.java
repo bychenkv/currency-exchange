@@ -16,11 +16,9 @@ import java.util.Optional;
 
 public class ExchangeRateDao {
     private final DataSource dataSource;
-    private final CurrencyDao currencyDao;
 
-    public ExchangeRateDao(DataSource dataSource, CurrencyDao currencyDao) {
+    public ExchangeRateDao(DataSource dataSource) {
         this.dataSource = dataSource;
-        this.currencyDao = currencyDao;
     }
 
     public List<ExchangeRate> findAll() {
@@ -89,13 +87,7 @@ public class ExchangeRateDao {
         return Optional.empty();
     }
 
-    public ExchangeRate save(CurrencyCodePair codePair, BigDecimal rate) {
-        Currency baseCurrency = currencyDao.findByCode(codePair.base())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
-
-        Currency targetCurrency = currencyDao.findByCode(codePair.target())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.target()));
-
+    public int save(Currency base, Currency target, BigDecimal rate) {
         String sql = """
                 INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate)
                 VALUES (?, ?, ?)""";
@@ -103,8 +95,8 @@ public class ExchangeRateDao {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         ) {
-            statement.setInt(1, baseCurrency.getId());
-            statement.setInt(2, targetCurrency.getId());
+            statement.setInt(1, base.getId());
+            statement.setInt(2, target.getId());
             statement.setBigDecimal(3, rate);
 
             int affectedRows = statement.executeUpdate();
@@ -115,30 +107,26 @@ public class ExchangeRateDao {
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     int id = generatedKeys.getInt(1);
-                    return findById(id).orElseThrow(() ->
-                            new SQLException("Error retrieving created exchange rate"));
+                    if (id == 0) {
+                        throw new SQLException("Error retrieving created exchange rate");
+                    }
+                    return id;
                 }
             }
-        } catch (SQLException e) {
-            if (e instanceof SQLiteException &&
-                ((SQLiteException) e).getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
-                throw new ExchangeRateAlreadyExistsException("Exchange rate for pair " + codePair +
-                                                             " already exists" , e);
+        } catch (SQLiteException e) {
+            if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+                throw new ExchangeRateAlreadyExistsException("Exchange rate for pair " + base.getCode() +
+                                                             target.getCode() + " already exists", e);
             }
-
+        } catch (SQLException e) {
             throw new DatabaseException("Failed to save exchange rate", e);
         }
 
         throw new DatabaseException("Failed to save exchange rate");
     }
 
-    public ExchangeRate update(CurrencyCodePair codePair, BigDecimal rate) {
-        Currency baseCurrency = currencyDao.findByCode(codePair.base())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
-
-        Currency targetCurrency = currencyDao.findByCode(codePair.target())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.target()));
-
+    public void update(Currency base, Currency target, BigDecimal rate) {
+        CurrencyCodePair codePair =  new CurrencyCodePair(base.getCode() + target.getCode());
         String sql = """
                 UPDATE exchange_rates
                 SET rate = ?
@@ -148,51 +136,16 @@ public class ExchangeRateDao {
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
             statement.setBigDecimal(1, rate);
-            statement.setInt(2, baseCurrency.getId());
-            statement.setInt(3, targetCurrency.getId());
+            statement.setInt(2, base.getId());
+            statement.setInt(3, target.getId());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
                 throw new ExchangeRateNotFoundException(codePair);
             }
-
-            return findByCodePair(codePair).orElseThrow(() ->
-                    new SQLException("Error retrieving updated exchange rate"));
         } catch (SQLException e) {
             throw new DatabaseException("Failed to update exchange rate", e);
         }
-    }
-
-    private Optional<ExchangeRate> findById(int id) throws SQLException {
-        String sql = """
-                SELECT er.id AS id,
-                       base.id AS base_id,
-                       base.code AS base_code,
-                       base.full_name AS base_name,
-                       base.sign AS base_sign,
-                       target.id AS target_id,
-                       target.code AS target_code,
-                       target.full_name AS target_name,
-                       target.sign AS target_sign,
-                       er.rate AS rate
-                FROM exchange_rates er
-                JOIN currencies base ON er.base_currency_id = base.id
-                JOIN currencies target ON er.target_currency_id = target.id
-                WHERE er.id = ?""";
-
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)
-        ) {
-            statement.setInt(1, id);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return Optional.of(getExchangeRateFromResultSet(resultSet));
-                }
-            }
-        }
-
-        return Optional.empty();
     }
 
     private ExchangeRate getExchangeRateFromResultSet(ResultSet resultSet) throws SQLException {

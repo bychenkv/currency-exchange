@@ -1,7 +1,10 @@
 package com.bychenkv.controller;
 
 import com.bychenkv.dao.CurrencyDao;
+import com.bychenkv.dto.CurrencyRequestDto;
+import com.bychenkv.dto.CurrencyResponseDto;
 import com.bychenkv.model.Currency;
+import com.bychenkv.service.CurrencyService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,27 +14,28 @@ import java.util.List;
 
 @WebServlet("/currencies")
 public class CurrenciesServlet extends BaseServlet {
-    private CurrencyDao dao;
+    private CurrencyService currencyService;
 
     @Override
     public void init() {
         super.init();
-        this.dao = (CurrencyDao) getServletContext().getAttribute("currencyDao");
+        this.currencyService = (CurrencyService) getServletContext().getAttribute("currencyService");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        List<Currency> currencies = dao.findAll();
+        List<CurrencyResponseDto> currencies = currencyService.findAll();
         sendJson(resp, HttpServletResponse.SC_OK, currencies);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String code = getRequiredParameter(req, "code");
-        String name = getRequiredParameter(req, "name");
-        String sign = getRequiredParameter(req, "sign");
-
-        Currency currency = dao.save(new Currency(code, name, sign));
+        CurrencyRequestDto requestDto = new CurrencyRequestDto(
+                getRequiredParameter(req, "code"),
+                getRequiredParameter(req, "name"),
+                getRequiredParameter(req, "sign")
+        );
+        CurrencyResponseDto currency = currencyService.save(requestDto);
         sendJson(resp, HttpServletResponse.SC_CREATED, currency);
     }
 }
