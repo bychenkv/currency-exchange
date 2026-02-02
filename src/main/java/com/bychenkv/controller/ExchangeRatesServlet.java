@@ -2,7 +2,6 @@ package com.bychenkv.controller;
 
 import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.dto.ExchangeRateResponseDto;
-import com.bychenkv.model.ExchangeRate;
 import com.bychenkv.service.ExchangeRateService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;

@@ -9,8 +9,6 @@ import com.bychenkv.model.Currency;
 import java.util.List;
 
 public class CurrencyService {
-    private static final String VALID_CURRENCY_CODE_REGEX = "^[A-Z]{3}$";
-
     private final CurrencyDao currencyDao;
 
     public CurrencyService(CurrencyDao currencyDao) {

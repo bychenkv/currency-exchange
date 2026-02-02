@@ -1,9 +1,7 @@
 package com.bychenkv.controller;
 
-import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.dto.CurrencyRequestDto;
 import com.bychenkv.dto.CurrencyResponseDto;
-import com.bychenkv.model.Currency;
 import com.bychenkv.service.CurrencyService;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
