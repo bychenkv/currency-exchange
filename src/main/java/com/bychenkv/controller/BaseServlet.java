@@ -112,7 +112,7 @@ public class BaseServlet extends HttpServlet {
                 String[] keyValue = pair.split("=", 2);
                 List<String> decoded = Arrays.stream(keyValue)
                         .map(kv -> URLDecoder.decode(kv, StandardCharsets.UTF_8)).toList();
-                params.put(decoded.getFirst(), decoded.getLast());
+                params.put(decoded.get(0), decoded.get(decoded.size() - 1));
             }
         }
         return params;
