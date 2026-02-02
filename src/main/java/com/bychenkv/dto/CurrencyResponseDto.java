@@ -9,9 +9,11 @@ public record CurrencyResponseDto(
         String sign
 ) {
     public static CurrencyResponseDto fromCurrency(Currency currency) {
-        return new CurrencyResponseDto(currency.getId(),
+        return new CurrencyResponseDto(
+                currency.getId(),
                 currency.getCode(),
                 currency.getFullName(),
-                currency.getSign());
+                currency.getSign()
+        );
     }
 }

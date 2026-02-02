@@ -12,20 +12,20 @@ import java.util.Optional;
 public class ExchangeService {
     private static final String USD = "USD";
 
-    private final ExchangeRateDao dao;
+    private final ExchangeRateDao exchangeRateDao;
 
-    public ExchangeService(ExchangeRateDao dao) {
-        this.dao = dao;
+    public ExchangeService(ExchangeRateDao exchangeRateDao) {
+        this.exchangeRateDao = exchangeRateDao;
     }
 
     public ExchangeResponseDto exchange(CurrencyCodePair codePair, BigDecimal amount) {
-        Optional<ExchangeResponseDto> direct = dao.findByCodePair(codePair)
+        Optional<ExchangeResponseDto> direct = exchangeRateDao.findByCodePair(codePair)
                 .map(er -> ExchangeResponseDto.direct(er, amount));
         if (direct.isPresent()) {
             return direct.get();
         }
 
-        Optional<ExchangeResponseDto> reversed = dao.findByCodePair(codePair.reversed())
+        Optional<ExchangeResponseDto> reversed = exchangeRateDao.findByCodePair(codePair.reversed())
                 .map(er -> ExchangeResponseDto.reversed(er, amount));
 
         return reversed.orElseGet(() -> exchangeByCrossRate(codePair, amount)
@@ -37,12 +37,12 @@ public class ExchangeService {
         CurrencyCodePair usdBase = new CurrencyCodePair(USD, codePair.base());
         CurrencyCodePair usdTarget = new CurrencyCodePair(USD, codePair.target());
 
-        Optional<ExchangeRate> crossBase = dao.findByCodePair(usdBase);
-        Optional<ExchangeRate> crossTarget = dao.findByCodePair(usdTarget);
+        Optional<ExchangeRate> usdToBase = exchangeRateDao.findByCodePair(usdBase);
+        Optional<ExchangeRate> usdToTarget = exchangeRateDao.findByCodePair(usdTarget);
 
-        if (crossBase.isPresent() && crossTarget.isPresent()) {
+        if (usdToBase.isPresent() && usdToTarget.isPresent()) {
             return Optional.of(
-                    ExchangeResponseDto.cross(crossBase.get(), crossTarget.get(), amount)
+                    ExchangeResponseDto.cross(usdToBase.get(), usdToTarget.get(), amount)
             );
         }
         return Optional.empty();
