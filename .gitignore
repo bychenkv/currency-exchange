@@ -14,6 +14,7 @@ target/
 *.ipr
 .idea/httpRequests/
 .idea/dataSources/
+.idea/dataSources.local.xml
 
 ### Eclipse ###
 .apt_generated
