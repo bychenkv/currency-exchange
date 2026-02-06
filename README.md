@@ -41,6 +41,9 @@ Also set Tomcat's installed directory in environment variable `CATALINA_BASE`.
     ```shell
     export CURRENCY_DB_PATH="/path/to/your/currency.db"
     ```
+   
+    By default, database path is `${user.home}/currency.db`.
+
 
 5. Run Tomcat
 
