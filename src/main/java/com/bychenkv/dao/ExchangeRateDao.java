@@ -149,17 +149,21 @@ public class ExchangeRateDao {
     }
 
     private ExchangeRate getExchangeRateFromResultSet(ResultSet resultSet) throws SQLException {
-        return new ExchangeRate(resultSet.getInt("id"),
+        return new ExchangeRate(
+                resultSet.getInt("id"),
                 getCurrencyFromResultSet(resultSet, "base"),
                 getCurrencyFromResultSet(resultSet, "target"),
-                resultSet.getBigDecimal("rate"));
+                resultSet.getBigDecimal("rate")
+        );
     }
 
     private Currency getCurrencyFromResultSet(ResultSet resultSet, String prefix) throws SQLException {
-        return new Currency(resultSet.getInt(getFullColumnName(prefix, "id")),
+        return new Currency(
+                resultSet.getInt(getFullColumnName(prefix, "id")),
                 resultSet.getString(getFullColumnName(prefix, "code")),
                 resultSet.getString(getFullColumnName(prefix, "name")),
-                resultSet.getString(getFullColumnName(prefix, "sign")));
+                resultSet.getString(getFullColumnName(prefix, "sign"))
+        );
     }
 
     private String getFullColumnName(String prefix, String name) {
