@@ -6,7 +6,13 @@ import jakarta.servlet.annotation.WebFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-@WebFilter("/*")
+@WebFilter(urlPatterns = {
+        "/currencies",
+        "/currency/*",
+        "/exchangeRates",
+        "/exchangeRate/*",
+        "/exchange"
+})
 public class ResponseHeadersFilter implements Filter {
     @Override
     public void doFilter(ServletRequest req,

@@ -14,7 +14,7 @@
     </properties>
 
     <build>
-        <finalName>currency-exchange</finalName>
+        <finalName>ROOT</finalName>
     </build>
 
     <dependencies>
