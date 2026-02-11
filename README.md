@@ -33,7 +33,7 @@ Also set Tomcat's installed directory in environment variable `CATALINA_BASE`.
 3. Copy WAR into Tomcat's `webapps` directory
 
     ```shell
-    mv target/currency-exchange.war $CATALINA_BASE/webapps
+    mv target/ROOT.war $CATALINA_BASE/webapps
     ```
 
 4. Set database path in environment variable `CURRENCY_DB_PATH`
@@ -51,7 +51,9 @@ Also set Tomcat's installed directory in environment variable `CATALINA_BASE`.
    $CATALINA_BASE/bin/startup.sh
     ```
 
-6. API is now available at `http://localhost:8080/currency-exchange`
+6. API is now available at `http://localhost:8080/`
+
+
 ## API Endpoints
 
 ### Currencies
