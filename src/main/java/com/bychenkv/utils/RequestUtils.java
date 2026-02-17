@@ -2,14 +2,11 @@ package com.bychenkv.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -97,19 +94,20 @@ public final class RequestUtils {
         }
 
         Map<String, String> params = new HashMap<>();
-        BufferedReader reader = req.getReader();
-        String requestBody = reader.lines().collect(Collectors.joining());
+        String body = req.getReader().lines().collect(Collectors.joining("&"));
 
-        for (String pair : requestBody.split("&")) {
-            String[] keyValue = pair.split("=", 2);
-            List<String> decoded = Arrays.stream(keyValue)
-                    .map(kv -> URLDecoder.decode(kv, StandardCharsets.UTF_8))
-                    .toList();
-            params.put(decoded.get(0), decoded.get(decoded.size() - 1));
+        if (!body.isBlank()) {
+            for (String pair : body.split("&")) {
+                String[] keyValue = pair.split("=", 2);
+                String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                String value = keyValue.length > 1
+                        ? URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8)
+                        : "";
+                params.put(key, value);
+            }
         }
 
         req.setAttribute("cachedParams", params);
-
         return params;
     }
 
