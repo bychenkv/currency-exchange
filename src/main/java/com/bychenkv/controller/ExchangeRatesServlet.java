@@ -3,8 +3,10 @@ package com.bychenkv.controller;
 import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.dto.ExchangeRateResponseDto;
 import com.bychenkv.service.ExchangeRateService;
+import com.bychenkv.utils.RequestUtils;
 import com.bychenkv.utils.ResponseUtils;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -13,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @WebServlet("/exchangeRates")
-public class ExchangeRatesServlet extends BaseServlet {
+public class ExchangeRatesServlet extends HttpServlet {
     private ExchangeRateService exchangeRateService;
 
     @Override
@@ -30,10 +32,10 @@ public class ExchangeRatesServlet extends BaseServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         CurrencyCodePair codePair = new CurrencyCodePair(
-                getCurrencyCodeParameter(req, "baseCurrencyCode"),
-                getCurrencyCodeParameter(req, "targetCurrencyCode")
+                RequestUtils.getCurrencyCodeParameter(req, "baseCurrencyCode"),
+                RequestUtils.getCurrencyCodeParameter(req, "targetCurrencyCode")
         );
-        BigDecimal rate = getRateParameter(req);
+        BigDecimal rate = RequestUtils.getRateParameter(req);
 
         ExchangeRateResponseDto exchangeRate = exchangeRateService.save(codePair, rate);
         ResponseUtils.sendJson(resp, HttpServletResponse.SC_CREATED, exchangeRate);

@@ -1,9 +1,6 @@
-package com.bychenkv.controller;
+package com.bychenkv.utils;
 
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,10 +15,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class BaseServlet extends HttpServlet {
-    protected static final String VALID_CURRENCY_CODE_REGEX = "^[A-Z]{3}$";
+public final class RequestUtils {
+    public static final String VALID_CURRENCY_CODE_REGEX = "^[A-Z]{3}$";
 
-    protected static String getPathParameter(HttpServletRequest req, String name) {
+    private RequestUtils() {}
+
+    public static String getPathParameter(HttpServletRequest req, String name) {
         String pathInfo = req.getPathInfo();
         if (pathInfo == null || pathInfo.equals("/")) {
             throw new IllegalArgumentException("Parameter '" + name + "' is missing from path");
@@ -34,7 +33,7 @@ public class BaseServlet extends HttpServlet {
         return value;
     }
 
-    protected static String getCurrencyCodeParameter(HttpServletRequest req, String name) throws IOException {
+    public static String getCurrencyCodeParameter(HttpServletRequest req, String name) throws IOException {
         String code = getRequiredParameter(req, name).toUpperCase();
         if (!code.matches(VALID_CURRENCY_CODE_REGEX)) {
             throw new IllegalArgumentException("Invalid currency code: " + code);
@@ -42,14 +41,14 @@ public class BaseServlet extends HttpServlet {
         return code;
     }
 
-    protected static BigDecimal getRateParameter(HttpServletRequest req) throws IOException {
+    public static BigDecimal getRateParameter(HttpServletRequest req) throws IOException {
         return getRequiredDecimalParameter(req,
                 "rate",
                 value -> value.compareTo(BigDecimal.ZERO) > 0,
                 name -> "The '" + name + "' value must be positive");
     }
 
-    protected static BigDecimal getAmountParameter(HttpServletRequest req) throws IOException {
+    public static BigDecimal getAmountParameter(HttpServletRequest req) throws IOException {
         return getRequiredDecimalParameter(req,
                 "amount",
                 value -> value.compareTo(BigDecimal.ZERO) >= 0,
@@ -73,7 +72,7 @@ public class BaseServlet extends HttpServlet {
         }
     }
 
-    protected static String getRequiredParameter(HttpServletRequest req, String name) throws IOException {
+    public static String getRequiredParameter(HttpServletRequest req, String name) throws IOException {
         String method = req.getMethod();
 
         if (method.equals("GET") || method.equals("POST")) {
