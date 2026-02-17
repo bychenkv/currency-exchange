@@ -7,13 +7,17 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public class ResponseUtils {
+public final class ResponseUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public static void sendError(HttpServletResponse resp, int code, String message) throws IOException {
-        resp.setContentType("application/json");
-        resp.setCharacterEncoding(StandardCharsets.UTF_8);
+    private ResponseUtils() {}
+
+    public static void sendJson(HttpServletResponse resp, int code, Object dto) throws IOException {
         resp.setStatus(code);
-        mapper.writeValue(resp.getWriter(), Map.of("message", message));
+        mapper.writeValue(resp.getWriter(), dto);
+    }
+
+    public static void sendError(HttpServletResponse resp, int code, String message) throws IOException {
+        sendJson(resp, code, Map.of("message", message));
     }
 }

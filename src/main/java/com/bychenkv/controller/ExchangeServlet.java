@@ -3,6 +3,7 @@ package com.bychenkv.controller;
 import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.dto.ExchangeResponseDto;
 import com.bychenkv.service.ExchangeService;
+import com.bychenkv.utils.ResponseUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,7 +17,6 @@ public class ExchangeServlet extends BaseServlet {
 
     @Override
     public void init() {
-        super.init();
         this.exchangeService = (ExchangeService) getServletContext().getAttribute("exchangeService");
     }
 
@@ -27,6 +27,6 @@ public class ExchangeServlet extends BaseServlet {
         BigDecimal amount = getAmountParameter(req);
 
         ExchangeResponseDto result = exchangeService.exchange(new CurrencyCodePair(from, to), amount);
-        sendJson(resp, HttpServletResponse.SC_OK, result);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_OK, result);
     }
 }

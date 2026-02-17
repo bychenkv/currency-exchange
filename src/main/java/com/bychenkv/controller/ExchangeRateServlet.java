@@ -3,6 +3,7 @@ package com.bychenkv.controller;
 import com.bychenkv.dto.CurrencyCodePair;
 import com.bychenkv.dto.ExchangeRateResponseDto;
 import com.bychenkv.service.ExchangeRateService;
+import com.bychenkv.utils.ResponseUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,7 +19,6 @@ public class ExchangeRateServlet extends BaseServlet {
 
     @Override
     public void init() {
-        super.init();
         this.exchangeRateService = (ExchangeRateService) getServletContext().getAttribute("exchangeRateService");
     }
 
@@ -26,7 +26,7 @@ public class ExchangeRateServlet extends BaseServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         CurrencyCodePair codePair = extractCodePair(req);
         ExchangeRateResponseDto exchangeRate = exchangeRateService.findByCodePair(codePair);
-        sendJson(resp, HttpServletResponse.SC_OK, exchangeRate);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_OK, exchangeRate);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class ExchangeRateServlet extends BaseServlet {
         BigDecimal rate = getRateParameter(req);
 
         ExchangeRateResponseDto exchangeRate = exchangeRateService.update(codePair, rate);
-        sendJson(resp, HttpServletResponse.SC_OK, exchangeRate);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_OK, exchangeRate);
     }
 
     private CurrencyCodePair extractCodePair(HttpServletRequest req) {

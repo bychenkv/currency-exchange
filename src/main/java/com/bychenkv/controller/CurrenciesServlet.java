@@ -3,6 +3,7 @@ package com.bychenkv.controller;
 import com.bychenkv.dto.CurrencyRequestDto;
 import com.bychenkv.dto.CurrencyResponseDto;
 import com.bychenkv.service.CurrencyService;
+import com.bychenkv.utils.ResponseUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,14 +17,13 @@ public class CurrenciesServlet extends BaseServlet {
 
     @Override
     public void init() {
-        super.init();
         this.currencyService = (CurrencyService) getServletContext().getAttribute("currencyService");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         List<CurrencyResponseDto> currencies = currencyService.findAll();
-        sendJson(resp, HttpServletResponse.SC_OK, currencies);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_OK, currencies);
     }
 
     @Override
@@ -34,6 +34,6 @@ public class CurrenciesServlet extends BaseServlet {
                 getRequiredParameter(req, "sign")
         );
         CurrencyResponseDto currency = currencyService.save(requestDto);
-        sendJson(resp, HttpServletResponse.SC_CREATED, currency);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_CREATED, currency);
     }
 }

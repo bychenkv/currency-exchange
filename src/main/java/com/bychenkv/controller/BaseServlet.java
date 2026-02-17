@@ -21,18 +21,6 @@ import java.util.stream.Collectors;
 public class BaseServlet extends HttpServlet {
     protected static final String VALID_CURRENCY_CODE_REGEX = "^[A-Z]{3}$";
 
-    private ObjectMapper mapper;
-
-    @Override
-    public void init() {
-        this.mapper = (ObjectMapper) getServletContext().getAttribute("mapper");
-    }
-
-    protected void sendJson(HttpServletResponse resp, int code, Object obj) throws IOException {
-        resp.setStatus(code);
-        mapper.writeValue(resp.getWriter(), obj);
-    }
-
     protected static String getPathParameter(HttpServletRequest req, String name) {
         String pathInfo = req.getPathInfo();
         if (pathInfo == null || pathInfo.equals("/")) {

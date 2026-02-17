@@ -2,6 +2,7 @@ package com.bychenkv.controller;
 
 import com.bychenkv.dto.CurrencyResponseDto;
 import com.bychenkv.service.CurrencyService;
+import com.bychenkv.utils.ResponseUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,7 +15,6 @@ public class CurrencyServlet extends BaseServlet {
 
     @Override
     public void init() {
-        super.init();
         this.currencyService = (CurrencyService) getServletContext().getAttribute("currencyService");
     }
 
@@ -25,6 +25,6 @@ public class CurrencyServlet extends BaseServlet {
             throw new IllegalArgumentException("Invalid currency code: " + code);
         }
         CurrencyResponseDto currency = currencyService.findByCode(code);
-        sendJson(resp, HttpServletResponse.SC_OK, currency);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_OK, currency);
     }
 }
