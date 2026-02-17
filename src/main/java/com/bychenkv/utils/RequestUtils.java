@@ -79,29 +79,37 @@ public final class RequestUtils {
             return ensureParameter(name, req::getParameter);
         }
 
-        // For some reason, req.getParameter(name) always returns null for PATCH/PUT requests
-        // So we need to parse reqeust body manually.
+        // For some reason, req.getParameter(name) always returns null for PATCH/PUT requests.
+        // So we need to parse request body manually.
         if (method.equals("PATCH") || method.equals("PUT")) {
             Map<String, String> params = parseRequestBody(req);
             return ensureParameter(name, params::get);
         }
 
-        throw new IllegalArgumentException("Unsupported HTTP method: " + method);
+        throw new RuntimeException("Unsupported HTTP method: " + method);
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, String> parseRequestBody(HttpServletRequest req) throws IOException {
+        Map<String, String> cached = (Map<String, String>) req.getAttribute("cachedParams");
+        if (cached != null) {
+            return cached;
+        }
+
         Map<String, String> params = new HashMap<>();
         BufferedReader reader = req.getReader();
         String requestBody = reader.lines().collect(Collectors.joining());
 
-        if (!requestBody.isBlank()) {
-            for (String pair : requestBody.split("&")) {
-                String[] keyValue = pair.split("=", 2);
-                List<String> decoded = Arrays.stream(keyValue)
-                        .map(kv -> URLDecoder.decode(kv, StandardCharsets.UTF_8)).toList();
-                params.put(decoded.get(0), decoded.get(decoded.size() - 1));
-            }
+        for (String pair : requestBody.split("&")) {
+            String[] keyValue = pair.split("=", 2);
+            List<String> decoded = Arrays.stream(keyValue)
+                    .map(kv -> URLDecoder.decode(kv, StandardCharsets.UTF_8))
+                    .toList();
+            params.put(decoded.get(0), decoded.get(decoded.size() - 1));
         }
+
+        req.setAttribute("cachedParams", params);
+
         return params;
     }
 
