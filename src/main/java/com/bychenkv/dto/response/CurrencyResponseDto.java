@@ -1,4 +1,4 @@
-package com.bychenkv.dto;
+package com.bychenkv.dto.response;
 
 import com.bychenkv.model.Currency;
 

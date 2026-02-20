@@ -1,4 +1,4 @@
-package com.bychenkv.dto;
+package com.bychenkv.dto.request;
 
 public record CurrencyRequestDto(
         String code,
