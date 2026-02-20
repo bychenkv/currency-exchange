@@ -2,7 +2,6 @@ package com.bychenkv.service;
 
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.dao.ExchangeRateDao;
-import com.bychenkv.exception.CurrencyAlreadyExistsException;
 import com.bychenkv.model.CurrencyCodePair;
 import com.bychenkv.dto.request.ExchangeRateRequestDto;
 import com.bychenkv.dto.response.ExchangeRateResponseDto;

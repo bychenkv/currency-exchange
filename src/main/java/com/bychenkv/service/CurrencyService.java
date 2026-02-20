@@ -24,17 +24,16 @@ public class CurrencyService {
     public CurrencyResponseDto findByCode(String code) {
         Currency currency = currencyDao.findByCode(code)
                 .orElseThrow(() -> new CurrencyNotFoundException(code));
-
         return CurrencyResponseDto.fromCurrency(currency);
     }
 
-    public CurrencyResponseDto save(CurrencyRequestDto requestDto) {
-        int id = currencyDao.save(requestDto);
+    public CurrencyResponseDto save(CurrencyRequestDto currency) {
+        int id = currencyDao.save(currency);
         return new CurrencyResponseDto(
                 id,
-                requestDto.code(),
-                requestDto.name(),
-                requestDto.sign()
+                currency.code(),
+                currency.name(),
+                currency.sign()
         );
     }
 }
