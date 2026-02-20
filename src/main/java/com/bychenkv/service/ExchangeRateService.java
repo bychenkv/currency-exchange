@@ -2,6 +2,7 @@ package com.bychenkv.service;
 
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.dao.ExchangeRateDao;
+import com.bychenkv.exception.CurrencyAlreadyExistsException;
 import com.bychenkv.model.CurrencyCodePair;
 import com.bychenkv.dto.request.ExchangeRateRequestDto;
 import com.bychenkv.dto.response.ExchangeRateResponseDto;
@@ -34,11 +35,8 @@ public class ExchangeRateService {
     }
 
     public ExchangeRateResponseDto save(ExchangeRateRequestDto exchangeRate) {
-        Currency base = currencyDao.findByCode(exchangeRate.base())
-                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.base()));
-
-        Currency target = currencyDao.findByCode(exchangeRate.target())
-                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.target()));
+        Currency base = findCurrencyByCode(exchangeRate.base());
+        Currency target = findCurrencyByCode(exchangeRate.target());
 
         int id = exchangeRateDao.save(base, target, exchangeRate.rate());
 
@@ -46,18 +44,19 @@ public class ExchangeRateService {
     }
 
     public ExchangeRateResponseDto update(ExchangeRateRequestDto exchangeRate) {
-        CurrencyCodePair codePair = new CurrencyCodePair(exchangeRate.base(), exchangeRate.target());
-
-        Currency baseCurrency = currencyDao.findByCode(exchangeRate.base())
-                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.base()));
-
-        Currency targetCurrency = currencyDao.findByCode(exchangeRate.target())
-                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.target()));
+        Currency baseCurrency = findCurrencyByCode(exchangeRate.base());
+        Currency targetCurrency = findCurrencyByCode(exchangeRate.target());
 
         exchangeRateDao.update(baseCurrency, targetCurrency, exchangeRate.rate());
 
+        CurrencyCodePair codePair = new CurrencyCodePair(exchangeRate.base(), exchangeRate.target());
         return exchangeRateDao.findByCodePair(codePair)
                 .map(ExchangeRateResponseDto::fromExchangeRate)
                 .orElseThrow(() -> new DatabaseException("Error retrieving updated exchange rate"));
+    }
+
+    private Currency findCurrencyByCode(String code) {
+        return currencyDao.findByCode(code)
+                .orElseThrow(() -> new CurrencyNotFoundException(code));
     }
 }
