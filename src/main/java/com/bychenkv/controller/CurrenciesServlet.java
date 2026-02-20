@@ -1,10 +1,11 @@
 package com.bychenkv.controller;
 
-import com.bychenkv.dto.CurrencyRequestDto;
-import com.bychenkv.dto.CurrencyResponseDto;
+import com.bychenkv.dto.request.CurrencyRequestDto;
+import com.bychenkv.dto.response.CurrencyResponseDto;
 import com.bychenkv.service.CurrencyService;
-import com.bychenkv.utils.RequestUtils;
+import com.bychenkv.utils.RequestParams;
 import com.bychenkv.utils.ResponseUtils;
+import com.bychenkv.utils.ValidationUtils;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +20,8 @@ public class CurrenciesServlet extends HttpServlet {
 
     @Override
     public void init() {
-        this.currencyService = (CurrencyService) getServletContext().getAttribute("currencyService");
+        this.currencyService = (CurrencyService) getServletContext()
+                .getAttribute("currencyService");
     }
 
     @Override
@@ -30,12 +32,17 @@ public class CurrenciesServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        CurrencyRequestDto newCurrency = new CurrencyRequestDto(
-                RequestUtils.getRequiredParameter(req, "code"),
-                RequestUtils.getRequiredParameter(req, "name"),
-                RequestUtils.getRequiredParameter(req, "sign")
+        CurrencyRequestDto currency = parsePostRequest(req);
+        CurrencyResponseDto saved = currencyService.save(currency);
+        ResponseUtils.sendJson(resp, HttpServletResponse.SC_CREATED, saved);
+    }
+
+    private static CurrencyRequestDto parsePostRequest(HttpServletRequest req) throws IOException {
+        RequestParams params = RequestParams.from(req);
+        return new CurrencyRequestDto(
+                ValidationUtils.validateCurrencyCode(params.requireRaw("code")),
+                params.requireRaw("name"),
+                params.requireRaw("sign")
         );
-        CurrencyResponseDto currency = currencyService.save(newCurrency);
-        ResponseUtils.sendJson(resp, HttpServletResponse.SC_CREATED, currency);
     }
 }
