@@ -1,6 +1,6 @@
 package com.bychenkv.dao;
 
-import com.bychenkv.dto.CurrencyRequestDto;
+import com.bychenkv.dto.request.CurrencyRequestDto;
 import com.bychenkv.exception.CurrencyAlreadyExistsException;
 import com.bychenkv.exception.DatabaseException;
 import com.bychenkv.model.Currency;

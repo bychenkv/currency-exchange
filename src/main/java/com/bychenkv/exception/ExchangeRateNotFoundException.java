@@ -1,6 +1,6 @@
 package com.bychenkv.exception;
 
-import com.bychenkv.dto.CurrencyCodePair;
+import com.bychenkv.model.CurrencyCodePair;
 
 public class ExchangeRateNotFoundException extends RuntimeException {
     public ExchangeRateNotFoundException(CurrencyCodePair codePair) {

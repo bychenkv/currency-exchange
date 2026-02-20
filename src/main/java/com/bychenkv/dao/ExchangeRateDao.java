@@ -2,7 +2,7 @@ package com.bychenkv.dao;
 
 import com.bychenkv.exception.*;
 import com.bychenkv.model.Currency;
-import com.bychenkv.dto.CurrencyCodePair;
+import com.bychenkv.model.CurrencyCodePair;
 import com.bychenkv.model.ExchangeRate;
 import org.sqlite.SQLiteErrorCode;
 import org.sqlite.SQLiteException;
@@ -126,7 +126,7 @@ public class ExchangeRateDao {
     }
 
     public void update(Currency base, Currency target, BigDecimal rate) {
-        CurrencyCodePair codePair =  new CurrencyCodePair(base.getCode() + target.getCode());
+        CurrencyCodePair codePair =  new CurrencyCodePair(base.getCode(), target.getCode());
         String sql = """
                 UPDATE exchange_rates
                 SET rate = ?
