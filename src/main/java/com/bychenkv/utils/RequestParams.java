@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
 
+import static com.bychenkv.utils.RequestUtils.getParameterMap;
+import static com.bychenkv.utils.RequestUtils.parseRequestBody;
+
 public class RequestParams {
     private final Map<String, String> params;
 
@@ -17,8 +20,8 @@ public class RequestParams {
         String method = req.getMethod().toUpperCase();
 
         Map<String, String> params = switch (method) {
-            case "GET", "POST" -> RequestUtils.getQueryParams(req);
-            case "PUT", "PATCH" -> RequestUtils.parseRequestBody(req);
+            case "GET", "POST" -> getParameterMap(req);
+            case "PUT", "PATCH" -> parseRequestBody(req);
             default -> throw new IllegalArgumentException("Unsupported HTTP method: " + method);
         };
 

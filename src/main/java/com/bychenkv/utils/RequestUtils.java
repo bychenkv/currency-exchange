@@ -25,7 +25,7 @@ public final class RequestUtils {
         return value;
     }
 
-    public static Map<String, String> parseRequestBody(HttpServletRequest req) throws IOException {
+    static Map<String, String> parseRequestBody(HttpServletRequest req) throws IOException {
         Map<String, String> params = new HashMap<>();
         String body = req.getReader().lines().collect(Collectors.joining());
 
@@ -43,7 +43,7 @@ public final class RequestUtils {
         return params;
     }
 
-    public static Map<String, String> getQueryParams(HttpServletRequest req) {
+    static Map<String, String> getParameterMap(HttpServletRequest req) {
         return req.getParameterMap().entrySet().stream()
                 .collect(
                         Collectors.toMap(
