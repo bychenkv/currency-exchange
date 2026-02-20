@@ -4,6 +4,6 @@ import com.bychenkv.model.CurrencyCodePair;
 
 public class ExchangeRateNotFoundException extends RuntimeException {
     public ExchangeRateNotFoundException(CurrencyCodePair codePair) {
-        super("Exchange rate for " + codePair + " not found");
+        super("Exchange rate not found: " + codePair);
     }
 }
