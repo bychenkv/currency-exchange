@@ -14,6 +14,12 @@ import java.util.List;
 import java.util.Optional;
 
 public class CurrencyDao {
+    private static final String FIND_ALL_QUERY = "SELECT * FROM currencies";
+    private static final String FIND_BY_CODE_QUERY = "SELECT * FROM currencies WHERE code = ?";
+    private static final String SAVE_QUERY = """
+            INSERT INTO currencies (code, full_name, sign)
+            VALUES (?, ?, ?)""";
+
     private final DataSource dataSource;
 
     public CurrencyDao(DataSource dataSource) {
@@ -22,14 +28,14 @@ public class CurrencyDao {
 
     public List<Currency> findAll() {
         List<Currency> currencies = new ArrayList<>();
-        String sql = "SELECT * FROM currencies";
 
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)
+             ResultSet resultSet = statement.executeQuery(FIND_ALL_QUERY)
         ) {
             while (resultSet.next()) {
-                currencies.add(getCurrencyFromResultSet(resultSet));
+                Currency currency = getCurrencyFromResultSet(resultSet);
+                currencies.add(currency);
             }
         } catch (SQLException e) {
             throw new DatabaseException("Failed to find all currencies", e);
@@ -39,10 +45,8 @@ public class CurrencyDao {
     }
 
     public Optional<Currency> findByCode(String code) {
-        String sql = "SELECT * FROM currencies WHERE code = ?";
-
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)
+             PreparedStatement statement = connection.prepareStatement(FIND_BY_CODE_QUERY)
         ) {
             statement.setString(1, code);
 
@@ -52,17 +56,15 @@ public class CurrencyDao {
                 }
             }
         } catch (SQLException e) {
-            throw new DatabaseException("Failed to find currency by code: " + code, e);
+            throw new DatabaseException("Failed to find currency " + code, e);
         }
 
         return Optional.empty();
     }
 
     public int save(CurrencyRequestDto currency) {
-        String sql = "INSERT INTO currencies (code, full_name, sign) VALUES (?, ?, ?)";
-
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+             PreparedStatement statement = connection.prepareStatement(SAVE_QUERY, Statement.RETURN_GENERATED_KEYS)
         ) {
             statement.setString(1, currency.code());
             statement.setString(2, currency.name());
@@ -75,26 +77,21 @@ public class CurrencyDao {
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    int id = generatedKeys.getInt(1);
-                    if (id == 0) {
-                        throw new SQLException("No ID obtained");
-                    }
-                    return id;
+                    return generatedKeys.getInt(1);
                 }
+                throw new SQLException("No generated keys returned");
             }
         } catch (SQLiteException e) {
             if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
-                throw new CurrencyAlreadyExistsException("Currency with code " + currency.code() +
-                                                         " already exists", e);
+                throw new CurrencyAlreadyExistsException(currency.code());
             }
+            throw new DatabaseException("Failed to save currency", e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to save currency", e);
         }
-
-        throw new DatabaseException("Failed to save currency");
     }
 
-    private Currency getCurrencyFromResultSet(ResultSet resultSet) throws SQLException {
+    private static Currency getCurrencyFromResultSet(ResultSet resultSet) throws SQLException {
         return new Currency(
                 resultSet.getInt("id"),
                 resultSet.getString("code"),

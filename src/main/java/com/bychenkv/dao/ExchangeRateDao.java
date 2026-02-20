@@ -15,15 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class ExchangeRateDao {
-    private final DataSource dataSource;
-
-    public ExchangeRateDao(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    public List<ExchangeRate> findAll() {
-        List<ExchangeRate> exchangeRates = new ArrayList<>();
-        String sql = """
+    private static final String FIND_ALL_QUERY = """
                 SELECT er.id AS id,
                        base.id AS base_id,
                        base.code AS base_code,
@@ -38,12 +30,34 @@ public class ExchangeRateDao {
                 JOIN currencies base ON er.base_currency_id = base.id
                 JOIN currencies target ON er.target_currency_id = target.id""";
 
+    private static final String FIND_BY_CODE_PAIR_QUERY = FIND_ALL_QUERY +
+                                                          "WHERE base_code = ? AND target_code = ?";
+
+    private static final String SAVE_QUERY = """
+                INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate)
+                VALUES (?, ?, ?)""";
+
+    private static final String UPDATE_QUERY = """
+                UPDATE exchange_rates
+                SET rate = ?
+                WHERE base_currency_id = ? AND target_currency_id = ?""";
+
+    private final DataSource dataSource;
+
+    public ExchangeRateDao(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public List<ExchangeRate> findAll() {
+        List<ExchangeRate> exchangeRates = new ArrayList<>();
+
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)
+             ResultSet resultSet = statement.executeQuery(FIND_ALL_QUERY)
         ) {
             while (resultSet.next()) {
-                exchangeRates.add(getExchangeRateFromResultSet(resultSet));
+                ExchangeRate exchangeRate = getExchangeRateFromResultSet(resultSet);
+                exchangeRates.add(exchangeRate);
             }
         } catch (SQLException e) {
             throw new DatabaseException("Failed to find all exchange rates", e);
@@ -53,24 +67,8 @@ public class ExchangeRateDao {
     }
 
     public Optional<ExchangeRate> findByCodePair(CurrencyCodePair codePair) {
-        String sql = """
-                SELECT er.id AS id,
-                       base.id AS base_id,
-                       base.code AS base_code,
-                       base.full_name AS base_name,
-                       base.sign AS base_sign,
-                       target.id AS target_id,
-                       target.code AS target_code,
-                       target.full_name AS target_name,
-                       target.sign AS target_sign,
-                       er.rate AS rate
-                FROM exchange_rates er
-                JOIN currencies base ON er.base_currency_id = base.id
-                JOIN currencies target ON er.target_currency_id = target.id
-                WHERE base_code = ? AND target_code = ?""";
-
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)
+             PreparedStatement statement = connection.prepareStatement(FIND_BY_CODE_PAIR_QUERY)
         ) {
             statement.setString(1, codePair.base());
             statement.setString(2, codePair.target());
@@ -81,19 +79,18 @@ public class ExchangeRateDao {
                 }
             }
         } catch (SQLException e) {
-            throw new DatabaseException("Failed to find exchange rate for pair: " + codePair, e);
+            throw new DatabaseException("Failed to find exchange rate " + codePair, e);
         }
 
         return Optional.empty();
     }
 
     public int save(Currency base, Currency target, BigDecimal rate) {
-        String sql = """
-                INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate)
-                VALUES (?, ?, ?)""";
-
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
+             PreparedStatement statement = connection.prepareStatement(
+                     SAVE_QUERY,
+                     Statement.RETURN_GENERATED_KEYS
+             )
         ) {
             statement.setInt(1, base.getId());
             statement.setInt(2, target.getId());
@@ -106,34 +103,24 @@ public class ExchangeRateDao {
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    int id = generatedKeys.getInt(1);
-                    if (id == 0) {
-                        throw new SQLException("Error retrieving created exchange rate");
-                    }
-                    return id;
+                    return generatedKeys.getInt(1);
                 }
+                throw new SQLException("No generated key returned");
             }
         } catch (SQLiteException e) {
             if (e.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
-                throw new ExchangeRateAlreadyExistsException("Exchange rate for pair " + base.getCode() +
-                                                             target.getCode() + " already exists", e);
+                CurrencyCodePair codePair = new CurrencyCodePair(base.getCode(), target.getCode());
+                throw new ExchangeRateAlreadyExistsException(codePair);
             }
+            throw new DatabaseException("Failed to save exchange rate", e);
         } catch (SQLException e) {
             throw new DatabaseException("Failed to save exchange rate", e);
         }
-
-        throw new DatabaseException("Failed to save exchange rate");
     }
 
     public void update(Currency base, Currency target, BigDecimal rate) {
-        CurrencyCodePair codePair =  new CurrencyCodePair(base.getCode(), target.getCode());
-        String sql = """
-                UPDATE exchange_rates
-                SET rate = ?
-                WHERE base_currency_id = ? AND target_currency_id = ?""";
-
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)
+             PreparedStatement statement = connection.prepareStatement(UPDATE_QUERY)
         ) {
             statement.setBigDecimal(1, rate);
             statement.setInt(2, base.getId());
@@ -141,6 +128,7 @@ public class ExchangeRateDao {
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
+                CurrencyCodePair codePair = new CurrencyCodePair(base.getCode(), target.getCode());
                 throw new ExchangeRateNotFoundException(codePair);
             }
         } catch (SQLException e) {
@@ -148,7 +136,7 @@ public class ExchangeRateDao {
         }
     }
 
-    private ExchangeRate getExchangeRateFromResultSet(ResultSet resultSet) throws SQLException {
+    private static ExchangeRate getExchangeRateFromResultSet(ResultSet resultSet) throws SQLException {
         return new ExchangeRate(
                 resultSet.getInt("id"),
                 getCurrencyFromResultSet(resultSet, "base"),
@@ -157,16 +145,16 @@ public class ExchangeRateDao {
         );
     }
 
-    private Currency getCurrencyFromResultSet(ResultSet resultSet, String prefix) throws SQLException {
+    private static Currency getCurrencyFromResultSet(ResultSet resultSet, String prefix) throws SQLException {
         return new Currency(
-                resultSet.getInt(getFullColumnName(prefix, "id")),
-                resultSet.getString(getFullColumnName(prefix, "code")),
-                resultSet.getString(getFullColumnName(prefix, "name")),
-                resultSet.getString(getFullColumnName(prefix, "sign"))
+                resultSet.getInt(buildColumnName(prefix, "id")),
+                resultSet.getString(buildColumnName(prefix, "code")),
+                resultSet.getString(buildColumnName(prefix, "name")),
+                resultSet.getString(buildColumnName(prefix, "sign"))
         );
     }
 
-    private String getFullColumnName(String prefix, String name) {
+    private static String buildColumnName(String prefix, String name) {
         return prefix + "_" + name;
     }
 }
