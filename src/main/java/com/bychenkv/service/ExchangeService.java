@@ -1,8 +1,9 @@
 package com.bychenkv.service;
 
 import com.bychenkv.dao.ExchangeRateDao;
-import com.bychenkv.dto.CurrencyCodePair;
-import com.bychenkv.dto.ExchangeResponseDto;
+import com.bychenkv.model.CurrencyCodePair;
+import com.bychenkv.dto.request.ExchangeRequestDto;
+import com.bychenkv.dto.response.ExchangeResponseDto;
 import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.ExchangeRate;
 
@@ -18,17 +19,19 @@ public class ExchangeService {
         this.exchangeRateDao = exchangeRateDao;
     }
 
-    public ExchangeResponseDto exchange(CurrencyCodePair codePair, BigDecimal amount) {
+    public ExchangeResponseDto exchange(ExchangeRequestDto request) {
+        CurrencyCodePair codePair = new CurrencyCodePair(request.from(), request.to());
+
         Optional<ExchangeResponseDto> direct = exchangeRateDao.findByCodePair(codePair)
-                .map(er -> ExchangeResponseDto.direct(er, amount));
+                .map(er -> ExchangeResponseDto.direct(er, request.amount()));
         if (direct.isPresent()) {
             return direct.get();
         }
 
         Optional<ExchangeResponseDto> reversed = exchangeRateDao.findByCodePair(codePair.reversed())
-                .map(er -> ExchangeResponseDto.reversed(er, amount));
+                .map(er -> ExchangeResponseDto.reversed(er, request.amount()));
 
-        return reversed.orElseGet(() -> exchangeByCrossRate(codePair, amount)
+        return reversed.orElseGet(() -> exchangeByCrossRate(codePair, request.amount())
                 .orElseThrow(() -> new ExchangeRateNotFoundException(codePair)));
 
     }

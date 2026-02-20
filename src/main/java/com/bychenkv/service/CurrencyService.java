@@ -1,8 +1,8 @@
 package com.bychenkv.service;
 
 import com.bychenkv.dao.CurrencyDao;
-import com.bychenkv.dto.CurrencyRequestDto;
-import com.bychenkv.dto.CurrencyResponseDto;
+import com.bychenkv.dto.request.CurrencyRequestDto;
+import com.bychenkv.dto.response.CurrencyResponseDto;
 import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.model.Currency;
 

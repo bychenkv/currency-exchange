@@ -2,14 +2,14 @@ package com.bychenkv.service;
 
 import com.bychenkv.dao.CurrencyDao;
 import com.bychenkv.dao.ExchangeRateDao;
-import com.bychenkv.dto.CurrencyCodePair;
-import com.bychenkv.dto.ExchangeRateResponseDto;
+import com.bychenkv.model.CurrencyCodePair;
+import com.bychenkv.dto.request.ExchangeRateRequestDto;
+import com.bychenkv.dto.response.ExchangeRateResponseDto;
 import com.bychenkv.exception.CurrencyNotFoundException;
 import com.bychenkv.exception.DatabaseException;
 import com.bychenkv.exception.ExchangeRateNotFoundException;
 import com.bychenkv.model.Currency;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public class ExchangeRateService {
@@ -33,26 +33,28 @@ public class ExchangeRateService {
                 .orElseThrow(() -> new ExchangeRateNotFoundException(codePair));
     }
 
-    public ExchangeRateResponseDto save(CurrencyCodePair codePair, BigDecimal rate) {
-        Currency base = currencyDao.findByCode(codePair.base())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
+    public ExchangeRateResponseDto save(ExchangeRateRequestDto exchangeRate) {
+        Currency base = currencyDao.findByCode(exchangeRate.base())
+                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.base()));
 
-        Currency target = currencyDao.findByCode(codePair.target())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.target()));
+        Currency target = currencyDao.findByCode(exchangeRate.target())
+                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.target()));
 
-        int id = exchangeRateDao.save(base, target, rate);
+        int id = exchangeRateDao.save(base, target, exchangeRate.rate());
 
-        return new ExchangeRateResponseDto(id, base, target, rate);
+        return new ExchangeRateResponseDto(id, base, target, exchangeRate.rate());
     }
 
-    public ExchangeRateResponseDto update(CurrencyCodePair codePair, BigDecimal rate) {
-        Currency baseCurrency = currencyDao.findByCode(codePair.base())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.base()));
+    public ExchangeRateResponseDto update(ExchangeRateRequestDto exchangeRate) {
+        CurrencyCodePair codePair = new CurrencyCodePair(exchangeRate.base(), exchangeRate.target());
 
-        Currency targetCurrency = currencyDao.findByCode(codePair.target())
-                .orElseThrow(() -> new CurrencyNotFoundException(codePair.target()));
+        Currency baseCurrency = currencyDao.findByCode(exchangeRate.base())
+                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.base()));
 
-        exchangeRateDao.update(baseCurrency, targetCurrency, rate);
+        Currency targetCurrency = currencyDao.findByCode(exchangeRate.target())
+                .orElseThrow(() -> new CurrencyNotFoundException(exchangeRate.target()));
+
+        exchangeRateDao.update(baseCurrency, targetCurrency, exchangeRate.rate());
 
         return exchangeRateDao.findByCodePair(codePair)
                 .map(ExchangeRateResponseDto::fromExchangeRate)
